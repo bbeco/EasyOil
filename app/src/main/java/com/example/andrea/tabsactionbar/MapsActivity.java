@@ -22,6 +22,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -87,15 +88,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        userLocation = new LatLng(locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER).getLatitude(),locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER).getLongitude());
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation,0));
-        listener = new LocationListener() {
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+              listener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
                 userLocation = new LatLng(location.getLatitude(),location.getLongitude());
-                userMarker.setPosition(userLocation);
+                userMarker = mMap.addMarker(new MarkerOptions()
+                        .position(userLocation)
+                        .title("Marker in userLocation")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                        .snippet("You are here"));
+              //  userMarker.setPosition(userLocation);
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
             }
 
             @Override
@@ -113,24 +118,30 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         } else {
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, listener);
+            if(locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, listener);
+                if(locationManager.getLastKnownLocation((LocationManager.NETWORK_PROVIDER))== null) {
+                    userLocation = new LatLng(0,0);
+                } else {
+                    userLocation = new LatLng(locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER).getLatitude(), locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER).getLongitude());
+                }
+                userMarker = mMap.addMarker(new MarkerOptions()
+                        .position(userLocation)
+                        .title("Marker in userLocation")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                        .snippet("You are here"));
+                userMarker.setPosition(userLocation);
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
+                Intent s = new Intent(this, SampleService.class);
+                Log.i("MapsActivity","arrivati qui prima del bind");
+                bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
+            } else {
+                Toast toast = Toast.makeText(this,"activate gps",Toast.LENGTH_SHORT);
+                toast.show();
+                super.finish();
+            }
         }
-
-        userMarker = mMap.addMarker(new MarkerOptions()
-                .position(userLocation)
-                .title("Marker in userLocation")
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-                .snippet("You are here"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation,10));
-        //Location location = service.getLastKnownLocation(provider);
-        // Add a marker in Sydney and move the camera
-       /* LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));*/
-        Intent s = new Intent(this, SampleService.class);
-        Log.i("MapsActivity","arrivati qui prima del bind");
-        bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
     }
     @Override
     public void onPause (){
@@ -154,7 +165,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         return;
                     }
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, listener);
+                    if(locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, listener);
+                    } else {
+                        Toast toast = Toast.makeText(this,"activate gps",Toast.LENGTH_SHORT);
+                        toast.show();
+                        super.finish();
+                    }
                 }
             }
         }
