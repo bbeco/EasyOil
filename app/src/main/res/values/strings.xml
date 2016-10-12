@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Tabs ActionBar</string>
+    <string name="nearby">Nearby</string>
+    <string name="commute">Commute</string>
+    <string name="chat">Chat</string>
+    <string name="no_conversation">No active conversation</string>
+    <string name="new_conversation">New conversation</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_maps">Map</string>
+</resources>
