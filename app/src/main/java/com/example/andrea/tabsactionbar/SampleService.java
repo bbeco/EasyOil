@@ -243,7 +243,7 @@ public class SampleService extends Service {
                             //in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
                             out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
                         } catch (IOException ioe) {
-                            Log.e(TAG, "Cannot create socket");
+                            Log.e(TAG, "Cannot create OutputStream");
                             ioe.printStackTrace();
                             break;
                         }
@@ -291,7 +291,6 @@ public class SampleService extends Service {
                     boundActivityMessenger = null;
                     break;
                 case MessageTypes.SEARCH_STATION_REQUEST:
-                   // boundActivityMessenger = msg.replyTo;
                     try {
                         out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
 
@@ -386,6 +385,7 @@ public class SampleService extends Service {
                 socket.close();
                 mListener.join();
             } catch (IOException e) {
+                Log.e(TAG, "Unable to close listening thread's socket");
                 e.printStackTrace();
             } catch (InterruptedException e) {
                 Log.e(TAG, "Unable to wait for listening thread to stop");

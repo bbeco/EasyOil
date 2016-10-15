@@ -133,8 +133,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 userMarker.setPosition(userLocation);
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
+
+                /* Service binding */
                 Intent s = new Intent(this, SampleService.class);
-                Log.i("MapsActivity","arrivati qui prima del bind");
                 bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
             } else {
                 Toast toast = Toast.makeText(this,"activate gps",Toast.LENGTH_SHORT);
@@ -192,10 +193,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         try {
             mService.send(registrationRequest);
+            Log.i(TAG, "registration command sent");
         } catch (RemoteException re) {
             /* Service has crashed. Nothing to do here */
+            Log.e(TAG, "unable to send registration command");
         }
-        Log.i(TAG, "registration command sent");
     }
 
     /**
@@ -203,12 +205,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     private void unregisterClient() {
         Message unregistration = Message.obtain(null, SampleService.CLIENT_UNREGISTRATION);
-        unregistration.arg1 = SampleService.MAIN_ACTIVITY;
+        unregistration.arg1 = SampleService.MAPS_ACTIVITY;
         unregistration.replyTo = mMessenger;
 
         try {
             mService.send(unregistration);
         } catch (RemoteException re) {
+            Log.e(TAG, "unable to send unregistration");
             /* Service crashed. Nothing to do */
         }
     }
