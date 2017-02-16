@@ -17,9 +17,22 @@ public class ConversationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
 
-        String array[] = {"ciao", "mondo"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getApplicationContext(),
-                R.layout.list_elem_mine, R.id.message_text, array);
+        ListView l = (ListView)findViewById(R.id.chat_list);
+        l.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
+        l.setStackFromBottom(true);
+
+        //String array[] = {"ciao", "mondo"};
+        ArrayList<ChatMessage> messageList = new ArrayList<ChatMessage>(30);
+        for (int i = 0; i < 15; i++) {
+            messageList.add(new ChatMessage("Andrea", "Francesco", "ciao " + i, i));
+        }
+        for (int i = 0; i < 15 ; i++) {
+            messageList.add(new ChatMessage("Francesco", "Andrea", "ciao " + (i + 15), i + 15));
+        }
+        /*ArrayAdapter<ChatMessage> adapter = new ArrayAdapter<ChatMessage>(getApplicationContext(),
+                R.layout.list_elem_mine, R.id.message_text, messageList);*/
+        ChatListAdapter adapter = new ChatListAdapter(getApplicationContext(), messageList, "Andrea");
+        //Log.d(TAG, Integer.toString(adapter.getCount()));
         ListView listView = (ListView) findViewById(R.id.chat_list);
         listView.setAdapter(adapter);
     }

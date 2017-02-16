@@ -11,13 +11,12 @@
         android:layout_alignParentRight="true"/>
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/message_text"
         android:textColor="@color/wallet_primary_text_holo_light"
         android:text="prova"
-        android:layout_alignParentLeft="true"
         android:layout_toLeftOf="@id/my_image_view"
-        android:gravity="right"/>
+        />
 
 </RelativeLayout>
