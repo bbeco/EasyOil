@@ -12,6 +12,11 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.example.andrea.tabsactionbar.chat.SearchUserRequest;
+import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
+import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
+import com.example.andrea.tabsactionbar.chat.messages.RegistrationResponse;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -40,6 +45,8 @@ public class SampleService extends Service {
     public static final int MAIN_ACTIVITY = 0;
     public static final int MAPS_ACTIVITY = 1;
     public static final int CHAT_ACTIVITY = 2;
+    public static final int START_CONVERSATION_ACTIVITY = 3;
+
     /** Currently bound activity's code (it is not meaningful if no activity is bound). This must
      * be set to one of the code described above.
      */
@@ -290,6 +297,14 @@ public class SampleService extends Service {
                     Log.i(TAG, "Client unregistration");
                     boundActivityMessenger = null;
                     break;
+
+                /* Search a specific user in the directory server */
+                case MessageTypes.SEARCH_USER_REQUEST:
+                    SearchUserRequest userReq = (SearchUserRequest) msg.obj;
+
+                    Log.i(TAG, "Searching user " + userReq.name);
+                    break;
+
                 case MessageTypes.SEARCH_STATION_REQUEST:
                     try {
                         out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
@@ -316,7 +331,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "10.0.0.67";
+    private static final String HOST = "192.168.1.3";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
@@ -331,7 +346,7 @@ public class SampleService extends Service {
 
         // Start up the thread running the service.  Note that we create a
         // separate thread because the service normally runs in the process's
-        // main thread, which we don't want to block.  We also make it
+        // main thread, which we want not to block.  We also make it
         // background priority so CPU-intensive work will not disrupt our UI.
         HandlerThread thread = new HandlerThread("ServiceStartArguments",
                 Process.THREAD_PRIORITY_BACKGROUND);

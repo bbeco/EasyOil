@@ -26,7 +26,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".StartConversationActivity"
+            android:name=".chat.StartConversationActivity"
             android:parentActivityName=".MainActivity">
 
             <!-- Parent activity meta-data to support 4.0 and lower -->
@@ -62,7 +62,8 @@
             android:enabled="true"
             android:exported="true" />
 
-        <activity android:name=".ConversationActivity"></activity>
+        <activity android:name=".chat.ConversationActivity"
+            android:parentActivityName=".MainActivity"></activity>
     </application>
 
 </manifest>

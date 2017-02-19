@@ -256,7 +256,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     break;
                 default:
                     Log.w(TAG, "Received an unknown task message");
-                    super.handleMessage(msg);
+                    super.handleMessage(msg); // FIXME<- questo va fatto sempre??
             }
         }
     }

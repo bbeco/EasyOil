@@ -1,4 +1,6 @@
-package com.example.andrea.tabsactionbar;
+package com.example.andrea.tabsactionbar.chat;
+
+import com.example.andrea.tabsactionbar.MessageTypes;
 
 import org.json.JSONArray;
 import org.json.JSONException;

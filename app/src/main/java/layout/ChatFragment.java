@@ -2,7 +2,6 @@ package layout;
 
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.Gravity;
@@ -14,7 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.andrea.tabsactionbar.R;
-import com.example.andrea.tabsactionbar.StartConversationActivity;
+import com.example.andrea.tabsactionbar.chat.StartConversationActivity;
 
 /**
  * A simple {@link Fragment} subclass.

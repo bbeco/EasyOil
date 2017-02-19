@@ -1,10 +1,11 @@
-package com.example.andrea.tabsactionbar;
+package com.example.andrea.tabsactionbar.chat;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
+
+import com.example.andrea.tabsactionbar.R;
+import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 
 import java.util.ArrayList;
 
