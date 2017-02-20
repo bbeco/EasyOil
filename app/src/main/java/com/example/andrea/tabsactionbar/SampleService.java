@@ -3,6 +3,7 @@ package com.example.andrea.tabsactionbar;
 import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -29,7 +30,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import com.example.andrea.tabsactionbar.chat.ConversationsDbHelper;
 
 /**
  * The onStartCommand method is called with a timer. The foreground activity calls bindService.
@@ -102,19 +102,26 @@ public class SampleService extends Service {
                                 /* This carries a list of unread messages */
                                 Log.i(TAG, "registration response received");
                                 RegistrationResponse response = new RegistrationResponse(json);
-                                //if the current activity is not the expected one, discard the message and continue
-                                if (!bound || boundActivityCode != CHAT_ACTIVITY) {
-                                    Log.w(TAG, "received message for an unbound activity");
-                                    for (ChatMessage msg : response.messages) {
-                                        ContentValues value = new ContentValues();
-                                        value.put(ConversationsDbHelper.ChatMessageEntry.SENDER, msg.sender);
-                                        value.put(ConversationsDbHelper.ChatMessageEntry.RECEIVER, msg.recipient);
-                                        value.put(ConversationsDbHelper.ChatMessageEntry.PAYLOAD, msg.payload);
-                                        value.put(ConversationsDbHelper.ChatMessageEntry.TIMESTAMP, msg.ts);
 
-                                        conversationsDb.insert(ConversationsDbHelper.ChatMessageEntry.TABLE_NAME, null, value);
+                                /* Saving the new messages int the local db */
+                                for (ChatMessage msg : response.messages) {
+                                    ContentValues value = new ContentValues();
+                                    value.put(ConversationsDbHelper.ChatMessageEntry.SENDER, msg.sender);
+                                    value.put(ConversationsDbHelper.ChatMessageEntry.RECEIVER, msg.recipient);
+                                    value.put(ConversationsDbHelper.ChatMessageEntry.PAYLOAD, msg.payload);
+                                    value.put(ConversationsDbHelper.ChatMessageEntry.TIMESTAMP, msg.ts);
+
+                                    /* Updating the reference ts to the ts of the last received message */
+                                    if (msg.ts > lastMessageTs) {
+                                        lastMessageTs = msg.ts;
                                     }
-                                    //show a notification
+                                    conversationsDb.insert(ConversationsDbHelper.ChatMessageEntry.TABLE_NAME, null, value);
+                                }
+
+                                //if the current activity is not the expected one, discard the message and continue
+                                if (response.messages.size() > 0 && (!bound || boundActivityCode != CHAT_ACTIVITY)) {
+                                    Log.w(TAG, "received new message for an unbound activity");
+                                    //TODO handle the message (show notification)
                                     continue;
                                 }
 
@@ -124,7 +131,7 @@ public class SampleService extends Service {
 
                             case MessageTypes.SEARCH_STATION_RESPONSE:
                                 if(!bound || boundActivityCode != MAPS_ACTIVITY){
-                                    Log.w(TAG, "received message for an unbound activity");
+                                    Log.w(TAG, "received station response for an unbound activity");
                                     continue;
                                 }
                                 Log.v(TAG,"in the search station response case");
@@ -163,6 +170,8 @@ public class SampleService extends Service {
     private Looper mServiceLooper;
     private ServiceHandler mServiceHandler;
     private Messenger mMessenger;
+
+    private long lastMessageTs;
 
     /**
      * Service handler's codes
@@ -211,9 +220,8 @@ public class SampleService extends Service {
                         }
                     }
 
-                    long ts = 0;
                     RegistrationRequest regMsg = new RegistrationRequest("andrea",
-                            "Andrea Beconcini", ts);
+                            "Andrea Beconcini", lastMessageTs);
                     String json;
                     try {
                         json = regMsg.toJSONString();
@@ -291,13 +299,13 @@ public class SampleService extends Service {
                         mListener.start();
 
                         /* Sending registration */
-                        RegistrationRequest req = new RegistrationRequest("andrea", "Andrea Beconcini", 0);
+                        RegistrationRequest req = new RegistrationRequest("andrea", "Andrea Beconcini", lastMessageTs);
                         try {
                             json = req.toJSONString();
                             out.writeBytes(json);
                             out.flush();
                         } catch (JSONException je) {
-
+                            je.printStackTrace();
                         } catch (IOException e) {
                             Log.e(TAG, "unable to send message");
                             e.printStackTrace();
@@ -339,9 +347,7 @@ public class SampleService extends Service {
                         String jsonReq = req.toJSONString();
                         out.writeBytes(jsonReq);
                         out.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JSONException e) {
+                    } catch (IOException | JSONException e) {
                         e.printStackTrace();
                     }
                     break;
@@ -363,6 +369,11 @@ public class SampleService extends Service {
     DataOutputStream out = null;
     DataInputStream in = null;
 
+    /* Preference file name used to save the last received message ts */
+    private static final String PREF_FILE_NAME = "com.example.andrea.tabsactionbar.saved_ts";
+    /* This is the key used for saving the last message ts in the PREF_FILE_NAME file */
+    private static final String LAST_MESSAGE_TS_KEY = "savedTs";
+
     public SampleService() {}
 
     @Override
@@ -382,6 +393,10 @@ public class SampleService extends Service {
         mServiceLooper = thread.getLooper();
         mServiceHandler = new ServiceHandler(mServiceLooper);
         mMessenger = new Messenger(mServiceHandler);
+
+        /* Retriving the last saved value for the last message ts */
+        SharedPreferences savedTs = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
+        lastMessageTs = savedTs.getLong(LAST_MESSAGE_TS_KEY, 0); //if no save is found, default is 0
     }
 
     /*
@@ -439,5 +454,11 @@ public class SampleService extends Service {
     @Override
     public void onDestroy() {
         Log.i(TAG, "onDestroy");
+
+        /* saving last message ts */
+        SharedPreferences savedTs = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = savedTs.edit();
+        editor.putLong(LAST_MESSAGE_TS_KEY, lastMessageTs);
+        editor.apply();
     }
 }
