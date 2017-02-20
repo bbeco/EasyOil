@@ -1,7 +1,9 @@
 package com.example.andrea.tabsactionbar;
 
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -12,6 +14,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.example.andrea.tabsactionbar.chat.ConversationsDbHelper;
 import com.example.andrea.tabsactionbar.chat.SearchUserRequest;
 import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
@@ -26,6 +29,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import com.example.andrea.tabsactionbar.chat.ConversationsDbHelper;
 
 /**
  * The onStartCommand method is called with a timer. The foreground activity calls bindService.
@@ -57,6 +61,12 @@ public class SampleService extends Service {
         private Socket socket;
         private DataInputStream in;
 
+        /* The Sqlite helper is used to get an instance of the sqlite db */
+        ConversationsDbHelper mDbHelper = new ConversationsDbHelper(getApplicationContext());
+
+        /* This is an instance of the local DB */
+        private SQLiteDatabase conversationsDb;
+
         ListenerThread(Socket s) throws IOException {
             socket = s;
             in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
@@ -66,6 +76,9 @@ public class SampleService extends Service {
         public void run() {
             Log.i(TAG, "starting");
             int res;
+            /* Opening the database */
+            conversationsDb = mDbHelper.getWritableDatabase();
+
             while (true) {
                 byte[] buffer, tmp;
                 tmp = new byte[4096];
@@ -86,11 +99,21 @@ public class SampleService extends Service {
                         int type = Integer.parseInt(obj.getString("type"));
                         switch (type) {
                             case MessageTypes.REGISTRATION_RESPONSE:
-                                Log.v(TAG, "registration response received");
+                                /* This carries a list of unread messages */
+                                Log.i(TAG, "registration response received");
                                 RegistrationResponse response = new RegistrationResponse(json);
                                 //if the current activity is not the expected one, discard the message and continue
                                 if (!bound || boundActivityCode != CHAT_ACTIVITY) {
                                     Log.w(TAG, "received message for an unbound activity");
+                                    for (ChatMessage msg : response.messages) {
+                                        ContentValues value = new ContentValues();
+                                        value.put(ConversationsDbHelper.ChatMessageEntry.SENDER, msg.sender);
+                                        value.put(ConversationsDbHelper.ChatMessageEntry.RECEIVER, msg.recipient);
+                                        value.put(ConversationsDbHelper.ChatMessageEntry.PAYLOAD, msg.payload);
+                                        value.put(ConversationsDbHelper.ChatMessageEntry.TIMESTAMP, msg.ts);
+
+                                        conversationsDb.insert(ConversationsDbHelper.ChatMessageEntry.TABLE_NAME, null, value);
+                                    }
                                     //show a notification
                                     continue;
                                 }
@@ -98,6 +121,7 @@ public class SampleService extends Service {
                                 Message msg = Message.obtain(null, MessageTypes.REGISTRATION_RESPONSE);
                                 boundActivityMessenger.send(msg);
                                 break;
+
                             case MessageTypes.SEARCH_STATION_RESPONSE:
                                 if(!bound || boundActivityCode != MAPS_ACTIVITY){
                                     Log.w(TAG, "received message for an unbound activity");
@@ -127,6 +151,8 @@ public class SampleService extends Service {
                 }
             }
             Log.i(TAG, "terminating");
+            /* Closing the database */
+            mDbHelper.close();
         }
     }
 
