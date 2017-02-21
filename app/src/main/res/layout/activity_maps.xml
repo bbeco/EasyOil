@@ -10,5 +10,7 @@
 
     <include
         layout="@layout/toolbar" />
+    <include
+        layout="@layout/text_field_marker" />
 
    </fragment>

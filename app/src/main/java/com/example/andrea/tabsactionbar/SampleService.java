@@ -299,7 +299,9 @@ public class SampleService extends Service {
                         mListener.start();
 
                         /* Sending registration */
-                        RegistrationRequest req = new RegistrationRequest("andrea", "Andrea Beconcini", lastMessageTs);
+                        RegistrationRequest req = (RegistrationRequest)msg.obj;
+                        Log.e(TAG, msg.obj.toString());
+                        req.ts = lastMessageTs;
                         try {
                             json = req.toJSONString();
                             out.writeBytes(json);
@@ -351,6 +353,19 @@ public class SampleService extends Service {
                         e.printStackTrace();
                     }
                     break;
+                case MessageTypes.MODIFY_REQUEST:
+                    try {
+                        out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+                        ModifyRequest mreq = (ModifyRequest) msg.obj;
+                        String jsonMreq = mreq.toJSONString();
+                        out.writeBytes(jsonMreq);
+                        out.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    break;
                 default:
                     Log.i(TAG, "Unable to deal with incoming task");
                     super.handleMessage(msg);
@@ -363,7 +378,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.3";
+    private static final String HOST = "151.40.228.154";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;

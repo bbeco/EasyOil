@@ -8,8 +8,8 @@ import org.json.JSONObject;
 public class RegistrationRequest {
 	private final int type = MessageTypes.REGISTRATION_REQUEST;
 	
-	private String userId, name;
-	private long ts;
+	public String userId, name;
+	public long ts;
 	
 	public RegistrationRequest(String id, String fullname, long ts) {
 		userId = id;

@@ -20,8 +20,15 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutCompat;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -34,6 +41,9 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.nearby.messages.internal.MessageType;
+import com.google.android.gms.vision.Frame;
+import com.google.android.gms.vision.text.Text;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -130,12 +140,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         .title("Marker in userLocation")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         .snippet("You are here"));
+
                 userMarker.setPosition(userLocation);
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
-
-                /* Service binding */
                 Intent s = new Intent(this, SampleService.class);
+                Log.i("MapsActivity","arrivati qui prima del bind");
                 bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
             } else {
                 Toast toast = Toast.makeText(this,"activate gps",Toast.LENGTH_SHORT);
@@ -148,7 +158,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onPause (){
         Log.i("MapsActivity", "onPause");
         if (bound) {
-            unregisterClient();
+            unregisterMaps();
             unbindService(mServiceConnection);
             bound = false;
         }
@@ -177,7 +187,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
     }
-    private void registerClient() {
+    private void registerMaps() {
         Message registration = Message.obtain(null, SampleService.CLIENT_REGISTRATION);
         registration.arg1 = SampleService.MAPS_ACTIVITY;
         registration.replyTo = mMessenger;
@@ -188,30 +198,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
         }
-        Message registrationRequest = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
-        registrationRequest.replyTo = mMessenger;
-
-        try {
-            mService.send(registrationRequest);
-            Log.i(TAG, "registration command sent");
-        } catch (RemoteException re) {
-            /* Service has crashed. Nothing to do here */
-            Log.e(TAG, "unable to send registration command");
-        }
     }
 
     /**
      * Unregister from the service
      */
-    private void unregisterClient() {
+    private void unregisterMaps() {
         Message unregistration = Message.obtain(null, SampleService.CLIENT_UNREGISTRATION);
-        unregistration.arg1 = SampleService.MAPS_ACTIVITY;
+        unregistration.arg1 = SampleService.MAIN_ACTIVITY;
         unregistration.replyTo = mMessenger;
 
         try {
             mService.send(unregistration);
         } catch (RemoteException re) {
-            Log.e(TAG, "unable to send unregistration");
             /* Service crashed. Nothing to do */
         }
     }
@@ -221,7 +220,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             Log.i(TAG, "Bound");
             mService = new Messenger(service);
             bound = true;
-            registerClient();
+            registerMaps();
             SearchOilRequest req = new SearchOilRequest(userLocation.latitude,userLocation.longitude);
             Message msg = Message.obtain(null,MessageTypes.SEARCH_STATION_REQUEST);
             msg.obj = req;
@@ -239,6 +238,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             bound = false;
         }
     };
+    private double valueNotNull(EditText txt, Marker marker,int begin,int end){
+        if(!txt.getText().toString().matches("") ){
+             return Double.parseDouble(txt.getText().toString());
+        } else {
+            return Double.parseDouble(marker.getSnippet().substring(begin,end));
+        }
+    }
     private class IncomingHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
@@ -246,6 +252,42 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 case MessageTypes.SEARCH_STATION_RESPONSE:
                     SearchOilResponse sor = (SearchOilResponse) msg.obj;
                     Log.i("MapsHandler","ricevuto ssr");
+
+                    mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+                        EditText txt1, txt2, txt3;
+                        @Override
+                        public void onInfoWindowClick(final Marker marker) {
+                            Log.i("Maps","click on marker snippet "+marker.getSnippet());
+                            final LinearLayout ll = (LinearLayout)findViewById(R.id.textLayout);
+                            ll.setVisibility(View.VISIBLE);
+                            txt1 = (EditText)findViewById(R.id.editText1);
+                            txt2 = (EditText)findViewById(R.id.editText2);
+                            txt3 = (EditText)findViewById(R.id.editText3);
+                            Button btn = (Button)findViewById(R.id.button2);
+                            final double lat = marker.getPosition().latitude;
+                            final double lon = marker.getPosition().longitude;
+                            btn.setOnClickListener(new View.OnClickListener(){
+                                @Override
+                                public void onClick(View view) {
+                                    double oil,diesel,gpl;
+                                    oil = valueNotNull(txt1,marker,5,12);
+                                    diesel = valueNotNull(txt2,marker,21,28);
+                                    gpl = valueNotNull(txt3,marker,34,41);
+                                    ModifyRequest mreq = new ModifyRequest(lat,lon,oil,diesel,gpl);
+                                    Message msg = Message.obtain(null, MessageTypes.MODIFY_REQUEST);
+                                    msg.obj = mreq;
+                                    ll.setVisibility(View.GONE);
+                                    try {
+                                        mService.send(msg);
+                                    } catch (RemoteException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                }
+                            });
+                        }
+                    });
+
                     for(int i = 0; i<sor.oils.size();i++){
                        oilMarkers.add(mMap.addMarker(new MarkerOptions()
                                     .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
@@ -256,7 +298,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     break;
                 default:
                     Log.w(TAG, "Received an unknown task message");
-                    super.handleMessage(msg); // FIXME<- questo va fatto sempre??
+                    super.handleMessage(msg);
             }
         }
     }

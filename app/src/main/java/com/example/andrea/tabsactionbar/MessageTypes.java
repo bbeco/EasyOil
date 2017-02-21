@@ -8,4 +8,5 @@ public interface MessageTypes {
 	public static final int SEARCH_STATION_RESPONSE = 4;
 	public static final int REGISTRATION_REQUEST = 5;
 	public static final int REGISTRATION_RESPONSE = 6;
+	public static final int MODIFY_REQUEST = 7;
 }

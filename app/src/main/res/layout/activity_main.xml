@@ -3,6 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center"
+    android:layout_centerHorizontal="true"
+    android:id="@+id/container"
     android:layout_centerInParent="true">
 
     <Button
@@ -41,6 +43,25 @@
         android:layout_toEndOf="@+id/btn_chat"
         android:layout_marginLeft="46dp"
         android:layout_marginStart="46dp" />
+    <ProgressBar
+        android:id="@+id/login_progress1"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone" />
+
+    <com.facebook.login.widget.LoginButton
+        android:id="@+id/login_button1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="41dp"
+        android:layout_below="@+id/btn_setting"
+        android:layout_alignLeft="@+id/btn_map"
+        android:layout_alignStart="@+id/btn_map"
+        android:layout_marginLeft="44dp"
+        android:layout_marginStart="44dp" />
 
 
 </RelativeLayout>

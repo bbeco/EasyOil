@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/textLayout"
+    android:visibility="gone"
+    android:weightSum="1">
+
+    <EditText
+        android:layout_marginTop="270dp"
+        android:layout_marginLeft="70dp"
+        android:layout_width="242dp"
+        android:layout_height="wrap_content"
+        android:inputType="number|numberDecimal"
+        android:maxLength="7"
+        android:ems="10"
+        android:background="@color/com_facebook_button_background_color_disabled"
+        android:id="@+id/editText1" />
+
+    <EditText
+        android:layout_width="242dp"
+        android:layout_marginLeft="70dp"
+        android:layout_height="wrap_content"
+        android:inputType="number|numberDecimal"
+        android:maxLength="7"
+        android:ems="10"
+        android:background="@color/com_facebook_button_background_color_disabled"
+        android:id="@+id/editText2" />
+    <EditText
+        android:layout_marginLeft="70dp"
+        android:layout_width="242dp"
+        android:layout_height="wrap_content"
+        android:inputType="number|numberDecimal"
+        android:maxLength="7"
+        android:ems="10"
+        android:background="@color/com_facebook_button_background_color_disabled"
+        android:id="@+id/editText3" />
+
+    <Button
+        android:text="Done"
+        android:layout_width="183dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="70dp"
+        android:id="@+id/button2" />
+
+</LinearLayout>
