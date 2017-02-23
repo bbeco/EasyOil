@@ -360,12 +360,35 @@ public class SampleService extends Service {
                         String jsonMreq = mreq.toJSONString();
                         out.writeBytes(jsonMreq);
                         out.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JSONException e) {
+                    } catch (IOException | JSONException e) {
                         e.printStackTrace();
                     }
                     break;
+
+                /* Sending a new chat message */
+                case MessageTypes.CHAT_MESSAGE:
+	                Log.i(TAG, "received chat message");
+	                if (socket == null) {
+		                Log.e(TAG, "socket is null");
+	                }
+	                try {
+		                if (out == null) {
+			                Log.w(TAG, "output buffer was null");
+			                out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+		                }
+		                ChatMessage chatMessage = (ChatMessage) msg.obj;
+		                String jsonChatMessage = chatMessage.toJSONString();
+		                out.writeBytes(jsonChatMessage);
+		                out.flush();
+	                } catch (IOException e) {
+		                Log.e(TAG, "Unable to send chat message");
+		                e.printStackTrace();
+	                } catch (JSONException e) {
+		                Log.e(TAG, "Unable to convert chat message to json");
+		                e.printStackTrace();
+	                }
+	                break;
+
                 default:
                     Log.i(TAG, "Unable to deal with incoming task");
                     super.handleMessage(msg);
@@ -378,7 +401,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "151.40.228.154";
+    private static final String HOST = "192.168.1.3";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
