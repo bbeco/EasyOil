@@ -76,8 +76,11 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         }
         @Override
         public void onClick(View view) {
-            Log.v(TAG, "clicking conversation: " + recipientEmail);
-            //TODO lanciare intent per conversazione con destinatario recipientEmail
+            Log.v(TAG, "Starting conversation with " + recipientEmail);
+            Intent i = new Intent(getApplicationContext(), ConversationActivity.class);
+            i.putExtra(ConversationActivity.RECIPIENT_EMAIL_KEY, recipientEmail);
+            i.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
+            startActivity(i);
         }
     }
 
