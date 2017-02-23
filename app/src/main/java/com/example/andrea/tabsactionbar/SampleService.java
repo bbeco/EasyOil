@@ -135,6 +135,9 @@ public class SampleService extends Service {
                             case MessageTypes.CHAT_MESSAGE:
 	                            /* always save the message in the local db */
 	                            ChatMessage chatMessage = new ChatMessage(json);
+	                            if (chatMessage.ts > lastMessageTs) {
+		                            lastMessageTs = chatMessage.ts;
+	                            }
 	                            saveChatMessageInDb(chatMessage);
 
 	                            /*
