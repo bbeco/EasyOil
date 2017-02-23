@@ -56,16 +56,15 @@ public class SampleService extends Service {
      */
     private int boundActivityCode;
 
+	/* The Sqlite helper is used to get an instance of the sqlite db */
+	private ConversationsDbHelper mDbHelper;
+	/* Opening the database */
+	private SQLiteDatabase conversationsDb;
+
     private class ListenerThread extends Thread {
         private static final String TAG = "ListeningThread";
         private Socket socket;
         private DataInputStream in;
-
-        /* The Sqlite helper is used to get an instance of the sqlite db */
-        ConversationsDbHelper mDbHelper = new ConversationsDbHelper(getApplicationContext());
-
-        /* This is an instance of the local DB */
-        private SQLiteDatabase conversationsDb;
 
         ListenerThread(Socket s) throws IOException {
             socket = s;
@@ -76,8 +75,6 @@ public class SampleService extends Service {
         public void run() {
             Log.i(TAG, "starting");
             int res;
-            /* Opening the database */
-            conversationsDb = mDbHelper.getWritableDatabase();
 
             while (true) {
                 byte[] buffer, tmp;
@@ -105,17 +102,11 @@ public class SampleService extends Service {
 
                                 /* Saving the new messages int the local db */
                                 for (ChatMessage msg : response.messages) {
-                                    ContentValues value = new ContentValues();
-                                    value.put(ConversationsDbHelper.ChatMessageEntry.SENDER, msg.sender);
-                                    value.put(ConversationsDbHelper.ChatMessageEntry.RECEIVER, msg.recipient);
-                                    value.put(ConversationsDbHelper.ChatMessageEntry.PAYLOAD, msg.payload);
-                                    value.put(ConversationsDbHelper.ChatMessageEntry.TIMESTAMP, msg.ts);
-
+                                    saveChatMessageInDb(msg);
                                     /* Updating the reference ts to the ts of the last received message */
                                     if (msg.ts > lastMessageTs) {
                                         lastMessageTs = msg.ts;
                                     }
-                                    conversationsDb.insert(ConversationsDbHelper.ChatMessageEntry.TABLE_NAME, null, value);
                                 }
 
                                 //if the current activity is not the expected one, discard the message and continue
@@ -140,6 +131,25 @@ public class SampleService extends Service {
                                 sorMsg.obj = sor;
                                 boundActivityMessenger.send(sorMsg);
                                 break;
+
+                            case MessageTypes.CHAT_MESSAGE:
+	                            /* always save the message in the local db */
+	                            ChatMessage chatMessage = new ChatMessage(json);
+	                            saveChatMessageInDb(chatMessage);
+
+	                            /*
+	                             * Checking if the service must inform the running activity or
+	                             * create a notification
+	                             */
+	                            if (bound && boundActivityCode == CHAT_ACTIVITY) {
+		                            Message chatActivityMessage = Message.obtain(null, MessageTypes.CHAT_MESSAGE);
+		                            chatActivityMessage.obj = chatMessage;
+		                            boundActivityMessenger.send(chatActivityMessage);
+	                            } else {
+		                            //TODO create a notification
+	                            }
+	                            break;
+
                             default:
                                 Log.w(TAG, "Incoming message type not recognized");
                         }
@@ -365,7 +375,7 @@ public class SampleService extends Service {
                     }
                     break;
 
-                /* Sending a new chat message */
+                /* Sending a new chat message (and storing it in the local db) */
                 case MessageTypes.CHAT_MESSAGE:
 	                Log.i(TAG, "received chat message");
 	                if (socket == null) {
@@ -380,6 +390,8 @@ public class SampleService extends Service {
 		                String jsonChatMessage = chatMessage.toJSONString();
 		                out.writeBytes(jsonChatMessage);
 		                out.flush();
+
+		                saveChatMessageInDb(chatMessage);
 	                } catch (IOException e) {
 		                Log.e(TAG, "Unable to send chat message");
 		                e.printStackTrace();
@@ -435,6 +447,10 @@ public class SampleService extends Service {
         /* Retriving the last saved value for the last message ts */
         SharedPreferences savedTs = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
         lastMessageTs = savedTs.getLong(LAST_MESSAGE_TS_KEY, 0); //if no save is found, default is 0
+
+	    /* Initializing connection with local database */
+	    mDbHelper = new ConversationsDbHelper(getApplicationContext());
+	    conversationsDb = mDbHelper.getWritableDatabase();
     }
 
     /*
@@ -499,4 +515,20 @@ public class SampleService extends Service {
         editor.putLong(LAST_MESSAGE_TS_KEY, lastMessageTs);
         editor.apply();
     }
+
+	/**
+	 * This method saves a chat message in the local sqlite database
+	 * @param chatMessage The message to be saved
+	 */
+	protected void saveChatMessageInDb(ChatMessage chatMessage) {
+		ContentValues value = new ContentValues();
+		value.put(ConversationsDbHelper.ChatMessageEntry.SENDER, chatMessage.sender);
+		value.put(ConversationsDbHelper.ChatMessageEntry.RECEIVER, chatMessage.recipient);
+		value.put(ConversationsDbHelper.ChatMessageEntry.PAYLOAD, chatMessage.payload);
+		value.put(ConversationsDbHelper.ChatMessageEntry.TIMESTAMP, chatMessage.ts);
+		if (chatMessage.ts > lastMessageTs) {
+			lastMessageTs = chatMessage.ts;
+		}
+		conversationsDb.insert(ConversationsDbHelper.ChatMessageEntry.TABLE_NAME, null, value);
+	}
 }

@@ -79,10 +79,15 @@ public class ConversationActivity extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg) {
-            Log.i(TAG, "Message received: " + msg.arg1);
+            Log.i(TAG, "Message received");
             switch (msg.what) {
+	            case MessageTypes.CHAT_MESSAGE:
+		            ChatMessage chatMessage = (ChatMessage) msg.obj;
+		            //TODO check if it is inserted at the end of the message list
+		            messageList.add(chatMessage);
+		            break;
                 default:
-                    //TODO
+                    Log.e(TAG, "Received unknow message");
             }
             super.handleMessage(msg);
         }
@@ -159,7 +164,10 @@ public class ConversationActivity extends AppCompatActivity {
         super.onPause();
     }
 
-    /* This is called when the user push the "Send" button */
+    /* This is called when the user push the "Send" button.
+     * It sends the message to the service which then sends it to the server.
+     * The service also saves it in the local message db.
+     */
     public void sendMessage(View view) {
         EditText editText = (EditText) findViewById(R.id.input_message_text);
         String messageText = editText.getText().toString();
@@ -168,9 +176,14 @@ public class ConversationActivity extends AppCompatActivity {
         }
 
         ChatMessage message = new ChatMessage(userEmail, recipientEmail, messageText);
+	    //TODO check if this adds the message at the end of messageList
+	    messageList.add(message);
 	    Message serviceMsg = Message.obtain(null, MessageTypes.CHAT_MESSAGE, message);
 		serviceMsg.replyTo = mMessenger;
 	    try {
+		    /* When the service receives this message, it saves it in the local db (so that
+		     * ConversationActivity retrives every message sent on this chat).
+		     */
 		    mService.send(serviceMsg);
 	    } catch (RemoteException re) {
 		    Log.e(TAG, "unable to send unregistration");

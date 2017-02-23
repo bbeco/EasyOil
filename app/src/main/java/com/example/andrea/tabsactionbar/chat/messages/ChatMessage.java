@@ -15,7 +15,7 @@ public class ChatMessage {
 	public long ts = 0;
 
 	/**
-	 * This constructor atomatically set the correct timestamp
+	 * This constructor atomatically sets the correct timestamp
 	 *
 	 * @param sender
 	 * @param recipient
