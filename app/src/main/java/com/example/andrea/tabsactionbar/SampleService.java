@@ -258,8 +258,16 @@ public class SampleService extends Service {
                         Log.i(TAG, "read: " + jsonReply);
                         //TODO Add a test to check whether the received message type is correct
                         RegistrationResponse response = new RegistrationResponse(jsonReply);
-                        for (ChatMessage m : response.messages) {
-                            Log.i(TAG, "message: " + m);
+                        if (response.messages.size() > 0) {
+	                        //TODO send a notification
+	                        for (ChatMessage m : response.messages) {
+		                        Log.i(TAG, "message: " + m);
+	                        /* saving messages and updating timestamp */
+		                        saveChatMessageInDb(m);
+		                        if (m.ts > lastMessageTs) {
+			                        lastMessageTs = m.ts;
+		                        }
+	                        }
                         }
 
                     } catch (JSONException je) {
