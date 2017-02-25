@@ -99,7 +99,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-              listener = new LocationListener() {
+        listener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
                 userLocation = new LatLng(location.getLatitude(),location.getLongitude());
@@ -108,7 +108,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         .title("Marker in userLocation")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         .snippet("You are here"));
-              //  userMarker.setPosition(userLocation);
+                //  userMarker.setPosition(userLocation);
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
             }
@@ -140,7 +140,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         .title("Marker in userLocation")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         .snippet("You are here"));
-
                 userMarker.setPosition(userLocation);
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
@@ -153,6 +152,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 super.finish();
             }
         }
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+                oilMarkers.add(mMap.addMarker(new MarkerOptions()
+                        .position(latLng)
+                        .title("oilMarker"+oilMarkers.size())
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))));
+                getAndSendInfo(latLng.latitude,latLng.longitude,null);
+            }
+        });
     }
     @Override
     public void onPause (){
@@ -238,13 +247,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             bound = false;
         }
     };
-    private double valueNotNull(EditText txt, Marker marker,int begin,int end){
-        if(!txt.getText().toString().matches("") ){
-             return Double.parseDouble(txt.getText().toString());
-        } else {
-            return Double.parseDouble(marker.getSnippet().substring(begin,end));
-        }
-    }
+
     private class IncomingHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
@@ -257,43 +260,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         EditText txt1, txt2, txt3;
                         @Override
                         public void onInfoWindowClick(final Marker marker) {
-                            Log.i("Maps","click on marker snippet "+marker.getSnippet());
-                            final LinearLayout ll = (LinearLayout)findViewById(R.id.textLayout);
-                            ll.setVisibility(View.VISIBLE);
-                            txt1 = (EditText)findViewById(R.id.editText1);
-                            txt2 = (EditText)findViewById(R.id.editText2);
-                            txt3 = (EditText)findViewById(R.id.editText3);
-                            Button btn = (Button)findViewById(R.id.button2);
-                            final double lat = marker.getPosition().latitude;
-                            final double lon = marker.getPosition().longitude;
-                            btn.setOnClickListener(new View.OnClickListener(){
-                                @Override
-                                public void onClick(View view) {
-                                    double oil,diesel,gpl;
-                                    oil = valueNotNull(txt1,marker,5,12);
-                                    diesel = valueNotNull(txt2,marker,21,28);
-                                    gpl = valueNotNull(txt3,marker,34,41);
-                                    ModifyRequest mreq = new ModifyRequest(lat,lon,oil,diesel,gpl);
-                                    Message msg = Message.obtain(null, MessageTypes.MODIFY_REQUEST);
-                                    msg.obj = mreq;
-                                    ll.setVisibility(View.GONE);
-                                    try {
-                                        mService.send(msg);
-                                    } catch (RemoteException e) {
-                                        e.printStackTrace();
-                                    }
-
-                                }
-                            });
+                            getAndSendInfo(marker.getPosition().latitude,marker.getPosition().longitude,marker);
                         }
                     });
 
                     for(int i = 0; i<sor.oils.size();i++){
-                       oilMarkers.add(mMap.addMarker(new MarkerOptions()
-                                    .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
-                                    .title("oilMarker"+i)
-                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
-                                    .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl)));
+                        oilMarkers.add(mMap.addMarker(new MarkerOptions()
+                                .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
+                                .title("oilMarker"+i)
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                                .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl)));
                     }
                     break;
                 default:
@@ -301,6 +277,53 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     super.handleMessage(msg);
             }
         }
+    }
+
+
+    private double valueNotNull(EditText txt, Marker marker,int begin,int end){
+        if(!txt.getText().toString().matches("") ){
+            return Double.parseDouble(txt.getText().toString());
+        } else if (marker == null) {
+            return 0;
+        } else {
+            return Double.parseDouble(marker.getSnippet().substring(begin,end));
+        }
+    }
+    private void getAndSendInfo (double latitude, double longitude,final Marker marker){
+        final EditText txt1,txt2,txt3;
+        final LinearLayout ll = (LinearLayout)findViewById(R.id.textLayout);
+        ll.setVisibility(View.VISIBLE);
+        txt1 = (EditText)findViewById(R.id.editText1);
+        txt2 = (EditText)findViewById(R.id.editText2);
+        txt3 = (EditText)findViewById(R.id.editText3);
+        Button btn = (Button)findViewById(R.id.button2);
+        final double lat = latitude;
+        final double lon = longitude;
+        btn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                double oil,diesel,gpl;
+                oil = valueNotNull(txt1, marker,5,12);
+                diesel = valueNotNull(txt2,marker,21,28);
+                gpl = valueNotNull(txt3,marker,34,41);
+                if (oil == 0 && diesel == 0 && gpl == 0){
+                    Toast toast = Toast.makeText(getApplicationContext(),"all fields are zero, creation failed",Toast.LENGTH_SHORT);
+                    toast.show();
+                    ll.setVisibility(View.GONE);
+                    return;
+                }
+                ModifyRequest mreq = new ModifyRequest(lat,lon,oil,diesel,gpl);
+                Message msg = Message.obtain(null, MessageTypes.MODIFY_REQUEST);
+                msg.obj = mreq;
+                ll.setVisibility(View.GONE);
+                try {
+                    mService.send(msg);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
     }
 
 }

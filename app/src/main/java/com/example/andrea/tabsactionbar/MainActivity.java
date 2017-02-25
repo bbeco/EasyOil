@@ -85,36 +85,9 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
         loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
             @Override
             public void onSuccess(LoginResult loginResult) {
-
-                Log.v("MyLogin","here");
-                AccessToken t = loginResult.getAccessToken();
-
-                Log.v("MyLogin",t.getToken());
-                GraphRequest request = GraphRequest.newMeRequest(
-                        t,
-                        new GraphRequest.GraphJSONObjectCallback() {
-                            @Override
-                            public void onCompleted(
-                                    JSONObject object,
-                                    GraphResponse response) {
-                                try {
-                                    userName = object.getString("name");
-                                    userEmail = object.getString("email");
-                                    Log.v("MyLogin",userName);
-                                    Log.v("MyLogin",userEmail);
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                Bundle parameters = new Bundle();
-                parameters.putString("fields", "id,name,link,email");
-                request.setParameters(parameters);
-                request.executeAsync();
-
-                Intent s = new Intent(getApplicationContext(), SampleService.class);
-                Log.i(TAG,"arrivati qui prima del bind");
-                bindService(s, mServiceConnection, BIND_AUTO_CREATE);
+                Toast toast = Toast.makeText(getApplicationContext(),"logged with facebook",Toast.LENGTH_SHORT);
+                toast.show();
+                getFbElements();
             }
 
             @Override
@@ -128,8 +101,12 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             }
         });
         //updateWithToken(AccessToken.getCurrentAccessToken());
-
-
+        if( AccessToken.getCurrentAccessToken() == null || AccessToken.getCurrentAccessToken().isExpired()){
+            Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
+            toast.show();
+        } else {
+            getFbElements();
+        }
         btn_map = (Button) findViewById(R.id.btn_map);
         btn_chat = (Button) findViewById(R.id.btn_chat);
         btn_commute = (Button) findViewById(R.id.btn_commute);
@@ -163,8 +140,8 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             @Override
             public void onClick(View view) {
                 if( AccessToken.getCurrentAccessToken() != null && !AccessToken.getCurrentAccessToken().isExpired()){
-                 //   Intent i = new Intent(getApplicationContext(),MapsActivity.class);
-                 //   startActivity(i);
+                    //   Intent i = new Intent(getApplicationContext(),MapsActivity.class);
+                    //   startActivity(i);
                 } else {
                     Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
                     toast.show();
@@ -175,8 +152,8 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             @Override
             public void onClick(View view) {
                 if( AccessToken.getCurrentAccessToken() != null && !AccessToken.getCurrentAccessToken().isExpired()){
-                 //   Intent i = new Intent(getApplicationContext(),MapsActivity.class);
-                 //   startActivity(i);
+                    //   Intent i = new Intent(getApplicationContext(),MapsActivity.class);
+                    //   startActivity(i);
                 } else {
                     Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
                     toast.show();
@@ -204,6 +181,34 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         callbackManager.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void getFbElements (){
+        AccessToken t = AccessToken.getCurrentAccessToken();
+        GraphRequest request = GraphRequest.newMeRequest(
+                t,
+                new GraphRequest.GraphJSONObjectCallback() {
+                    @Override
+                    public void onCompleted(
+                            JSONObject object,
+                            GraphResponse response) {
+                        try {
+                            userName = object.getString("name");
+                            userEmail = object.getString("email");
+                            Log.v("MyLogin",userName);
+                            Log.v("MyLogin",userEmail);
+                            Intent s = new Intent(getApplicationContext(), SampleService.class);
+                            Log.i(TAG,"arrivati qui prima del bind");
+                            bindService(s, mServiceConnection, BIND_AUTO_CREATE);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+        Bundle parameters = new Bundle();
+        parameters.putString("fields", "id,name,link,email");
+        request.setParameters(parameters);
+        request.executeAsync();
     }
 
     private void registerClient() {

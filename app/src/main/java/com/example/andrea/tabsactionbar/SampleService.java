@@ -124,9 +124,10 @@ public class SampleService extends Service {
                                     //TODO handle the message (show notification)
                                     continue;
                                 }
-
-                                Message msg = Message.obtain(null, MessageTypes.REGISTRATION_RESPONSE);
-                                boundActivityMessenger.send(msg);
+                                if(boundActivityCode == SampleService.CHAT_ACTIVITY) {
+                                    Message msg = Message.obtain(null, MessageTypes.REGISTRATION_RESPONSE);
+                                    boundActivityMessenger.send(msg);
+                                }
                                 break;
 
                             case MessageTypes.SEARCH_STATION_RESPONSE:
@@ -135,10 +136,12 @@ public class SampleService extends Service {
                                     continue;
                                 }
                                 Log.v(TAG,"in the search station response case");
-                                SearchOilResponse sor = new SearchOilResponse(json);
-                                Message sorMsg = Message.obtain(null,MessageTypes.SEARCH_STATION_RESPONSE);
-                                sorMsg.obj = sor;
-                                boundActivityMessenger.send(sorMsg);
+                                if (boundActivityCode == SampleService.MAPS_ACTIVITY) {
+                                    SearchOilResponse sor = new SearchOilResponse(json);
+                                    Message sorMsg = Message.obtain(null, MessageTypes.SEARCH_STATION_RESPONSE);
+                                    sorMsg.obj = sor;
+                                    boundActivityMessenger.send(sorMsg);
+                                }
                                 break;
                             default:
                                 Log.w(TAG, "Incoming message type not recognized");
@@ -378,7 +381,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "151.40.228.154";
+    private static final String HOST = "192.168.1.133";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
