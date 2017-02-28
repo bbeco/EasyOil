@@ -21,6 +21,7 @@ import com.example.andrea.tabsactionbar.MessageTypes;
 import com.example.andrea.tabsactionbar.R;
 import com.example.andrea.tabsactionbar.SampleService;
 import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
+import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 
 import java.util.ArrayList;
 
@@ -38,14 +39,22 @@ public class ConversationActivity extends AppCompatActivity {
      * an intent.
      */
     public static final String USER_EMAIL_KEY = "userEmailKey";
+	/*
+	 * This is the key used to pass the user's own full name when starting this activity with an
+	 * intent.
+	 */
+	public static final String USER_FULL_NAME_KEY = "userFullNameKey";
 
-    /* The email address of the recipient */
+	/* The email address of the recipient */
     private String recipientEmail;
     /* My own email address */
     private String userEmail;
+	/* My own full name */
+	private String userFullName;
 
-    /* This is the list of messages ordered by timestamp */
+    /* This is the list of messages ordered by timestamp and the message adapter*/
     ArrayList<ChatMessage> messageList;
+	ChatListAdapter messageAdapter;
 
     /* true if this activity is currently bound to the service, false otherwise */
     private boolean bound = false;
@@ -85,7 +94,15 @@ public class ConversationActivity extends AppCompatActivity {
 		            ChatMessage chatMessage = (ChatMessage) msg.obj;
 		            //TODO check if it is inserted at the end of the message list
 		            messageList.add(chatMessage);
+					messageAdapter.notifyDataSetChanged();
 		            break;
+
+	            case SampleService.MESSAGE_SENT_NOTIFICATION:
+		            /*
+		             *This message is sent by the service to this activity to update the message
+		             * list.
+		             */
+		            messageAdapter.notifyDataSetChanged();
                 default:
                     Log.e(TAG, "Received unknow message");
             }
@@ -108,6 +125,7 @@ public class ConversationActivity extends AppCompatActivity {
         Intent mIntent = getIntent();
         recipientEmail = mIntent.getStringExtra(RECIPIENT_EMAIL_KEY);
         userEmail = mIntent.getStringExtra(USER_EMAIL_KEY);
+	    userFullName = mIntent.getStringExtra(USER_FULL_NAME_KEY);
 
         /* Retriving all the message for the recipient "recipientEmail" */
         ConversationsDbHelper mDbHelper = new ConversationsDbHelper(this);
@@ -136,10 +154,10 @@ public class ConversationActivity extends AppCompatActivity {
             //Log.i(TAG, recipient + " " + owner + " " + payload);
             messageList.add(new ChatMessage(sender, recipient, payload, ts));
         }
-        ChatListAdapter adapter = new ChatListAdapter(getApplicationContext(), messageList, userEmail);
+        messageAdapter = new ChatListAdapter(getApplicationContext(), messageList, userEmail);
         //Log.d(TAG, Integer.toString(adapter.getCount()));
         ListView listView = (ListView) findViewById(R.id.chat_list);
-        listView.setAdapter(adapter);
+        listView.setAdapter(messageAdapter);
     }
 
     @Override
@@ -190,6 +208,7 @@ public class ConversationActivity extends AppCompatActivity {
             /* Service crashed. Nothing to do */
 	    }
 
+	    editText.setText("");
     }
 
     /**
@@ -201,6 +220,8 @@ public class ConversationActivity extends AppCompatActivity {
         /* Activity registration */
         Message registration = Message.obtain(null, SampleService.CLIENT_REGISTRATION);
         registration.arg1 = SampleService.CHAT_ACTIVITY;
+	    /* We pass the name of the recipient so that the server is aware of it */
+	    registration.obj = recipientEmail;
         registration.replyTo = mMessenger;
 
         try {
@@ -209,6 +230,18 @@ public class ConversationActivity extends AppCompatActivity {
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
         }
+
+	    /* requesting new messages */
+	    /* Activity registration */
+	    Message serverRegistration = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
+	    serverRegistration.replyTo = mMessenger;
+	    serverRegistration.obj = new RegistrationRequest(userEmail, userFullName, 0);
+	    try {
+		    mService.send(serverRegistration);
+	    } catch (RemoteException re) {
+            /* Service has crashed, display an error */
+		    Log.e(TAG, "Unable to ask for server registration");
+	    }
     }
 
     /**

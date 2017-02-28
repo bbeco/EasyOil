@@ -32,6 +32,7 @@ import com.example.andrea.tabsactionbar.MessageTypes;
 import com.example.andrea.tabsactionbar.SampleService;
 
 import com.example.andrea.tabsactionbar.R;
+import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.google.android.gms.nearby.messages.internal.MessageType;
 
 import java.util.ArrayList;
@@ -39,7 +40,8 @@ import java.util.ArrayList;
 public class StartConversationActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
     private static final String TAG = "StartConversation";
 
-    private String userEmail = "andrea";
+    private String userEmail;
+	private String userFullName;
 
     /*
      * This is the structure for an entry in the array list associated to the list view of old
@@ -169,6 +171,11 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 
         /* Creating this app's messenger so that the service can communicate with it */
         mMessenger = new Messenger(new IncomingHandler());
+
+	    /* Retriving emailAddress passed within intent */
+	    Intent mIntent = getIntent();
+	    userFullName = mIntent.getStringExtra(ConversationActivity.USER_FULL_NAME_KEY);
+	    userEmail = mIntent.getStringExtra(ConversationActivity.USER_EMAIL_KEY);
     }
 
     @Override
@@ -185,7 +192,8 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         /* Retriving the list of old conversations and populating the list view */
         ConversationsDbHelper mDbHelper = new ConversationsDbHelper(this);
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT c.receiver AS receiver, c.sender AS sender, c.payload AS payload FROM conversation c JOIN (SELECT receiver, MAX(ts) AS maxTs FROM conversation GROUP BY receiver) groupedc ON c.receiver = groupedc.receiver AND c.ts = maxTs WHERE c.receiver <> \"" + userEmail + "\"", null);
+	    String query = "SELECT DISTINCT c.receiver as receiver, c.sender as sender, c.payload as payload FROM conversation c JOIN ( SELECT receiver, MAX(ts) as maxTs FROM conversation GROUP BY receiver) groupedc ON c.receiver = groupedc.receiver WHERE c.ts = maxTs AND c.receiver <> '" + userEmail + "'";
+        Cursor cursor = db.rawQuery(query, null);
         ArrayList<ConversationItem> oldConversation = new ArrayList<>();
         while (cursor.moveToNext()) {
             int recipientColumnIndex = cursor.getColumnIndex("receiver");
@@ -214,6 +222,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
      */
     @Override
     protected void onPause() {
+	    Log.i(TAG, "onPause");
         if (bound) {
             unregisterStartConversation();
             unbindService(mConnection);
@@ -312,6 +321,18 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
         }
+
+	    /* requesting new messages */
+	    /* Activity registration */
+	    Message serverRegistration = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
+	    serverRegistration.replyTo = mMessenger;
+	    serverRegistration.obj = new RegistrationRequest(userEmail, userFullName, 0);
+	    try {
+		    mService.send(serverRegistration);
+	    } catch (RemoteException re) {
+            /* Service has crashed, display an error */
+		    Log.e(TAG, "Unable to ask for server registration");
+	    }
     }
 
     /**

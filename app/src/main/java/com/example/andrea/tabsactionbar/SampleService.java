@@ -56,6 +56,12 @@ public class SampleService extends Service {
      */
     private int boundActivityCode;
 
+	/*
+	 * The service knows when we are chatting with somebody, so that it can choose when to create a
+	 * notification or not.
+	 */
+	private String conversationRecipient;
+
 	/* The Sqlite helper is used to get an instance of the sqlite db */
 	private ConversationsDbHelper mDbHelper;
 	/* Opening the database */
@@ -199,6 +205,12 @@ public class SampleService extends Service {
     /** Message code to remove the activity's messenger from this service before unbinding */
     public static final int CLIENT_UNREGISTRATION = -3;
 
+	/*
+	 *This is sent back to the activity by the service so that the activity can upate the message
+	 * list
+	 */
+	public static final int MESSAGE_SENT_NOTIFICATION = -4;
+
 
     /* Handler that receives messages from the thread */
     private final class ServiceHandler extends Handler {
@@ -323,11 +335,12 @@ public class SampleService extends Service {
                         mListener.start();
 
                         /* Sending registration */
-                        RegistrationRequest req = (RegistrationRequest)msg.obj;
+	                    //TODO make this service automatically create the registration request message
+                        RegistrationRequest registrationRequest = (RegistrationRequest)msg.obj;
                         Log.e(TAG, msg.obj.toString());
-                        req.ts = lastMessageTs;
+                        registrationRequest.ts = lastMessageTs;
                         try {
-                            json = req.toJSONString();
+                            json = registrationRequest.toJSONString();
                             out.writeBytes(json);
                             out.flush();
                         } catch (JSONException je) {
@@ -350,12 +363,17 @@ public class SampleService extends Service {
                     Log.i(TAG, "Client activity registration. Code: " + msg.arg1);
                     boundActivityMessenger = msg.replyTo;
                     boundActivityCode = msg.arg1;
+	                /* Saving the name of the recipient during a conversation */
+	                if (boundActivityCode == SampleService.CHAT_ACTIVITY) {
+		                conversationRecipient = (String)msg.obj;
+	                }
                     break;
 
                 /* Remove the current activity bound */
                 case CLIENT_UNREGISTRATION:
                     Log.i(TAG, "Client unregistration");
                     boundActivityMessenger = null;
+	                conversationRecipient = null;
                     break;
 
                 /* Search a specific user in the directory server */
@@ -404,13 +422,21 @@ public class SampleService extends Service {
 		                String jsonChatMessage = chatMessage.toJSONString();
 		                out.writeBytes(jsonChatMessage);
 		                out.flush();
-
 		                saveChatMessageInDb(chatMessage);
+
+		                /* notifying activity message has been sent */
+		                Message replyMessage = Message.obtain();
+		                replyMessage.what = MESSAGE_SENT_NOTIFICATION;
+		                replyMessage.replyTo = mMessenger;
+		                boundActivityMessenger.send(replyMessage);
 	                } catch (IOException e) {
 		                Log.e(TAG, "Unable to send chat message");
 		                e.printStackTrace();
 	                } catch (JSONException e) {
 		                Log.e(TAG, "Unable to convert chat message to json");
+		                e.printStackTrace();
+	                } catch (RemoteException e) {
+		                Log.e(TAG, "Unable to notify activity message has been sent");
 		                e.printStackTrace();
 	                }
 	                break;
