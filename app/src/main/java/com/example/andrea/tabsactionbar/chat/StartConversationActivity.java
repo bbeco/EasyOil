@@ -1,8 +1,11 @@
 package com.example.andrea.tabsactionbar.chat;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -15,9 +18,15 @@ import android.os.Bundle;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import com.example.andrea.tabsactionbar.MessageTypes;
 import com.example.andrea.tabsactionbar.SampleService;
@@ -25,8 +34,84 @@ import com.example.andrea.tabsactionbar.SampleService;
 import com.example.andrea.tabsactionbar.R;
 import com.google.android.gms.nearby.messages.internal.MessageType;
 
+import java.util.ArrayList;
+
 public class StartConversationActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
     private static final String TAG = "StartConversation";
+
+    private String userEmail = "andrea";
+
+    /*
+     * This is the structure for an entry in the array list associated to the list view of old
+     * conversations.
+     */
+    protected class ConversationItem {
+        /* The name of this conversation's recipient */
+        public String recipient;
+        /* The last message sent in this conversation */
+        public String lastMessage;
+        /* Who sent the last message in this conversation */
+        public String lastMessageOwner;
+
+        public ConversationItem(String recipient, String lastMessage, String lastMessageOwner) {
+            this.recipient = recipient;
+            this.lastMessage = lastMessage;
+            this.lastMessageOwner = lastMessageOwner;
+        }
+    }
+
+    /* This is the viewHolder to improve views reuse within the conversation list */
+    public class ViewHolder {
+        public TextView recipient;
+        public TextView lastMessage;
+    }
+
+    /* This is the onClickListener used when clicking on a conversation */
+    public class OnConversationClickListener implements View.OnClickListener {
+
+        private final String recipientEmail;
+
+        public OnConversationClickListener(String recipientEmail) {
+            this.recipientEmail = recipientEmail;
+        }
+        @Override
+        public void onClick(View view) {
+            Log.v(TAG, "Starting conversation with " + recipientEmail);
+            Intent i = new Intent(getApplicationContext(), ConversationActivity.class);
+            i.putExtra(ConversationActivity.RECIPIENT_EMAIL_KEY, recipientEmail);
+            i.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
+            startActivity(i);
+        }
+    }
+
+    /*
+     * This is the conversationAdapter used to render the list view for the old conversations
+     */
+    protected class ConversationAdapter extends ArrayAdapter<ConversationItem> {
+        public ConversationAdapter(Context context, ArrayList<ConversationItem> conversation) {
+            super(context, 0, conversation);
+        }
+
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ConversationItem c = getItem(position);
+            ViewHolder viewHolder;
+            if (convertView == null) {
+                viewHolder = new ViewHolder();
+                LayoutInflater inflater = LayoutInflater.from(getContext());
+                convertView = inflater.inflate(R.layout.conversation_item, parent, false);
+                viewHolder.recipient = (TextView) convertView.findViewById(R.id.recipient_text);
+                viewHolder.lastMessage = (TextView) convertView.findViewById(R.id.last_message_text);
+                convertView.setTag(viewHolder);
+            } else {
+                viewHolder = (ViewHolder) convertView.getTag();
+            }
+
+            viewHolder.recipient.setText(c.recipient);
+            viewHolder.lastMessage.setText(c.lastMessageOwner + ": " + c.lastMessage);
+            convertView.setOnClickListener(new OnConversationClickListener(c.recipient));
+            return convertView;
+        }
+    }
 
     /* true if this activity is currently bound to the service, false otherwise */
     private boolean bound = false;
@@ -44,7 +129,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
             mService = new Messenger(iBinder);
             bound = true;
             Log.i(TAG, "Bound to SampleService");
-            registerClient();
+            registerStartConversation();
         }
 
         @Override
@@ -55,6 +140,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         }
     };
 
+    /* This is the handler for the UI Thread */
     private class IncomingHandler extends Handler {
 
         @Override
@@ -95,6 +181,31 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
          */
         Intent connectionIntent = new Intent(this, SampleService.class);
         bindService(connectionIntent, mConnection, BIND_AUTO_CREATE);
+
+        /* Retriving the list of old conversations and populating the list view */
+        ConversationsDbHelper mDbHelper = new ConversationsDbHelper(this);
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT c.receiver AS receiver, c.sender AS sender, c.payload AS payload FROM conversation c JOIN (SELECT receiver, MAX(ts) AS maxTs FROM conversation GROUP BY receiver) groupedc ON c.receiver = groupedc.receiver AND c.ts = maxTs WHERE c.receiver <> \"" + userEmail + "\"", null);
+        ArrayList<ConversationItem> oldConversation = new ArrayList<>();
+        while (cursor.moveToNext()) {
+            int recipientColumnIndex = cursor.getColumnIndex("receiver");
+            int payloadColumnIndex = cursor.getColumnIndex("payload");
+            int ownerColumnIndex = cursor.getColumnIndex("sender");
+            if (recipientColumnIndex == -1 || payloadColumnIndex == -1 || ownerColumnIndex == -1) {
+                Log.e(TAG, "error while reading local conversation db");
+                break;
+            }
+            String recipient = cursor.getString(recipientColumnIndex);
+            String payload = cursor.getString(payloadColumnIndex);
+            String owner = cursor.getString(ownerColumnIndex);
+            Log.i(TAG, recipient + " " + owner + " " + payload);
+            oldConversation.add(new ConversationItem(recipient, payload, owner));
+        }
+        cursor.close();
+        Log.i(TAG, Integer.toString(oldConversation.size()) + " conversations found");
+        ConversationAdapter adapter = new ConversationAdapter(this, oldConversation);
+        ListView listView = (ListView) findViewById(R.id.conversation_list);
+        listView.setAdapter(adapter);
     }
 
 
@@ -104,7 +215,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
     @Override
     protected void onPause() {
         if (bound) {
-            unregisterClient();
+            unregisterStartConversation();
             unbindService(mConnection);
             mService = null;
         }
@@ -189,7 +300,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
      * After the registration has been performed, it asks the service to register the user in the
      * directory server.
      */
-    private void registerClient() {
+    private void registerStartConversation() {
         /* Activity registration */
         Message registration = Message.obtain(null, SampleService.CLIENT_REGISTRATION);
         registration.arg1 = SampleService.START_CONVERSATION_ACTIVITY;
@@ -201,24 +312,12 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
         }
-
-        /* User registration */
-        Message registrationRequest = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
-        registrationRequest.replyTo = mMessenger;
-
-        try {
-            mService.send(registrationRequest);
-            Log.i(TAG, "registration command sent");
-        } catch (RemoteException re) {
-            /* Service has crashed. Nothing to do here */
-            Log.e(TAG, "unable to send registration command");
-        }
     }
 
     /**
      * Unregister from the service
      */
-    private void unregisterClient() {
+    private void unregisterStartConversation() {
         Message unregistration = Message.obtain(null, SampleService.CLIENT_UNREGISTRATION);
         unregistration.arg1 = SampleService.START_CONVERSATION_ACTIVITY;
         unregistration.replyTo = mMessenger;

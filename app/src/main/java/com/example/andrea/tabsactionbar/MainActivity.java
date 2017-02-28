@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             @Override
             public void onClick(View view) {
                 if( AccessToken.getCurrentAccessToken() != null && !AccessToken.getCurrentAccessToken().isExpired()){
-                    Intent i = new Intent(getApplicationContext(), ConversationActivity.class);
+                    Intent i = new Intent(getApplicationContext(), StartConversationActivity.class);
                     startActivity(i);
                 } else {
                     Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);

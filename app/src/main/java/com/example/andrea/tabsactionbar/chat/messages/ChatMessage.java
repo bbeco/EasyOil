@@ -5,11 +5,30 @@ import com.example.andrea.tabsactionbar.MessageTypes;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Calendar;
+import java.util.TimeZone;
+
 public class ChatMessage {
 	
 	private final int type = MessageTypes.CHAT_MESSAGE;
 	public String sender, recipient, payload;
 	public long ts = 0;
+
+	/**
+	 * This constructor atomatically sets the correct timestamp
+	 *
+	 * @param sender
+	 * @param recipient
+	 * @param payload
+	 */
+	public ChatMessage(String sender, String recipient, String payload) {
+
+		this.sender = sender;
+		this.recipient = recipient;
+		this.payload = payload;
+		// get current time in second since the Epoch
+		ts = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime().getTime()/1000;
+	}
 
 	public ChatMessage(String sender, String recipient, String payload, long ts) {
 		
@@ -17,7 +36,6 @@ public class ChatMessage {
 		this.recipient = recipient;
 		this.payload = payload;
 		this.ts = ts;
-		// TODO Auto-generated constructor stub
 	}
 	public ChatMessage (String s) throws JSONException{
 		JSONObject obj = new JSONObject(s);

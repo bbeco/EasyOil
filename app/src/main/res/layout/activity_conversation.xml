@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_conversation"
     android:layout_width="match_parent"
@@ -12,26 +12,33 @@
     android:orientation="vertical">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1">
-
-        <ListView android:id="@+id/chat_list"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content" />
-
-    </LinearLayout>
-
-    <LinearLayout
+        android:id="@+id/input_message_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true">
 
         <EditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/message"
-            android:layout_alignParentBottom="true"/>
+            android:id="@+id/input_message_text"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:hint="@string/message" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="@string/send"
+            android:onClick="sendMessage"/>
     </LinearLayout>
 
-</LinearLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/input_message_container">
+
+        <ListView android:id="@+id/chat_list"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"/>
+
+    </RelativeLayout>
+
+</RelativeLayout>
