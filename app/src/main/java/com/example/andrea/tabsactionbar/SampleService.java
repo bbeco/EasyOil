@@ -381,7 +381,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.133";
+    private static final String HOST = "192.168.1.134";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
