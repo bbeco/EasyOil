@@ -108,11 +108,8 @@ public class SampleService extends Service {
 
                                 /* Saving the new messages int the local db */
                                 for (ChatMessage msg : response.messages) {
+	                                /* The following saves the message and update the timestamp lastTs */
                                     saveChatMessageInDb(msg);
-                                    /* Updating the reference ts to the ts of the last received message */
-                                    if (msg.ts > lastMessageTs) {
-                                        lastMessageTs = msg.ts;
-                                    }
                                 }
 
                                 //if the current activity is not the expected one, discard the message and continue
@@ -279,9 +276,6 @@ public class SampleService extends Service {
 		                        Log.i(TAG, "message: " + m);
 	                        /* saving messages and updating timestamp */
 		                        saveChatMessageInDb(m);
-		                        if (m.ts > lastMessageTs) {
-			                        lastMessageTs = m.ts;
-		                        }
 	                        }
                         }
 
