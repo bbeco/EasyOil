@@ -303,9 +303,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View view) {
                 double oil,diesel,gpl;
-                oil = valueNotNull(txt1, marker,5,12);
-                diesel = valueNotNull(txt2,marker,21,28);
-                gpl = valueNotNull(txt3,marker,34,41);
+                oil = valueNotNull(txt1, marker,5,10);
+                diesel = valueNotNull(txt2,marker,19,24);
+                gpl = valueNotNull(txt3,marker,30,35);
                 if (oil == 0 && diesel == 0 && gpl == 0){
                     Toast toast = Toast.makeText(getApplicationContext(),"all fields are zero, creation failed",Toast.LENGTH_SHORT);
                     toast.show();
