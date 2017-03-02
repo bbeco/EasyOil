@@ -82,6 +82,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
             Intent i = new Intent(getApplicationContext(), ConversationActivity.class);
             i.putExtra(ConversationActivity.RECIPIENT_EMAIL_KEY, recipientEmail);
             i.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
+	        i.putExtra(ConversationActivity.USER_FULL_NAME_KEY, userFullName);
             startActivity(i);
         }
     }
@@ -192,7 +193,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         /* Retriving the list of old conversations and populating the list view */
         ConversationsDbHelper mDbHelper = new ConversationsDbHelper(this);
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
-	    String query = "SELECT DISTINCT c.receiver as receiver, c.sender as sender, c.payload as payload FROM conversation c JOIN ( SELECT receiver, MAX(ts) as maxTs FROM conversation GROUP BY receiver) groupedc ON c.receiver = groupedc.receiver WHERE c.ts = maxTs AND c.receiver <> '" + userEmail + "'";
+	    String query = "SELECT DISTINCT c.receiver as receiver, c.sender as sender, c.payload as payload FROM conversation c JOIN ( SELECT receiver, MAX(ts) as maxTs FROM conversation GROUP BY receiver) groupedc ON c.receiver = groupedc.receiver WHERE c.ts = maxTs AND c.receiver = '" + userEmail + "'";
         Cursor cursor = db.rawQuery(query, null);
         ArrayList<ConversationItem> oldConversation = new ArrayList<>();
         while (cursor.moveToNext()) {
@@ -203,9 +204,16 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
                 Log.e(TAG, "error while reading local conversation db");
                 break;
             }
+	        String owner = cursor.getString(ownerColumnIndex);
             String recipient = cursor.getString(recipientColumnIndex);
+	        /*
+	         * If the last message was sent by the other person, I want the recipient to be him,
+	         * not me...
+	         */
+	        if (recipient.contentEquals(userEmail)) {
+		        recipient = owner;
+	        }
             String payload = cursor.getString(payloadColumnIndex);
-            String owner = cursor.getString(ownerColumnIndex);
             Log.i(TAG, recipient + " " + owner + " " + payload);
             oldConversation.add(new ConversationItem(recipient, payload, owner));
         }

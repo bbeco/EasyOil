@@ -149,16 +149,13 @@ public class SampleService extends Service {
                             case MessageTypes.CHAT_MESSAGE:
 	                            /* always save the message in the local db */
 	                            ChatMessage chatMessage = new ChatMessage(json);
-	                            if (chatMessage.ts > lastMessageTs) {
-		                            lastMessageTs = chatMessage.ts;
-	                            }
 	                            saveChatMessageInDb(chatMessage);
 
 	                            /*
 	                             * Checking if the service must inform the running activity or
 	                             * create a notification
 	                             */
-	                            if (bound && boundActivityCode == CHAT_ACTIVITY) {
+	                            if (bound && boundActivityCode == CHAT_ACTIVITY && chatMessage.sender.contentEquals(conversationRecipient)) {
 		                            Message chatActivityMessage = Message.obtain(null, MessageTypes.CHAT_MESSAGE);
 		                            chatActivityMessage.obj = chatMessage;
 		                            boundActivityMessenger.send(chatActivityMessage);
@@ -252,8 +249,8 @@ public class SampleService extends Service {
                             break;
                         }
                     }
-
-                    RegistrationRequest regMsg = new RegistrationRequest("andrea",
+					//FIXME create a request with right values
+                    RegistrationRequest regMsg = new RegistrationRequest("andrea.beconcini@gmail.com",
                             "Andrea Beconcini", lastMessageTs);
                     String json;
                     try {
