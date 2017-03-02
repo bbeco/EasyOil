@@ -2,6 +2,7 @@ package com.example.andrea.tabsactionbar.chat.messages;
 
 import com.example.andrea.tabsactionbar.MessageTypes;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -23,7 +24,7 @@ public class RegistrationRequest {
 		name = obj.getString("name");
 		ts = Long.parseLong(obj.getString("ts"), 10);
 	}
-	
+
 	public String toJSONString() throws JSONException {
 		JSONObject obj = new JSONObject();
 		obj.put("type", Integer.toString(type));

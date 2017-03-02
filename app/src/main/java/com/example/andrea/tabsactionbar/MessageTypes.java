@@ -9,4 +9,5 @@ public interface MessageTypes {
 	public static final int REGISTRATION_REQUEST = 5;
 	public static final int REGISTRATION_RESPONSE = 6;
 	public static final int MODIFY_REQUEST = 7;
+	public static final int COMMUTE_REQUEST = 8;
 }

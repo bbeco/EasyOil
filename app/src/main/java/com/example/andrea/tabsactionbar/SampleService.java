@@ -20,6 +20,7 @@ import com.example.andrea.tabsactionbar.chat.SearchUserRequest;
 import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationResponse;
+import com.google.android.gms.nearby.messages.internal.MessageType;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -50,7 +51,7 @@ public class SampleService extends Service {
     public static final int MAPS_ACTIVITY = 1;
     public static final int CHAT_ACTIVITY = 2;
     public static final int START_CONVERSATION_ACTIVITY = 3;
-
+    public static final int COMMUTE_ACTIVITY = 4;
     /** Currently bound activity's code (it is not meaningful if no activity is bound). This must
      * be set to one of the code described above.
      */
@@ -137,7 +138,14 @@ public class SampleService extends Service {
                                     boundActivityMessenger.send(sorMsg);
                                 }
                                 break;
-
+                            case MessageTypes.COMMUTE_REQUEST:
+                                if(boundActivityCode == SampleService.COMMUTE_ACTIVITY){
+                                    CommuteRequest creq = new CommuteRequest(json);
+                                    Message comreq = Message.obtain(null, MessageTypes.COMMUTE_REQUEST);
+                                    comreq.obj = creq;
+                                    boundActivityMessenger.send(comreq);
+                                }
+                                break;
                             case MessageTypes.CHAT_MESSAGE:
 	                            /* always save the message in the local db */
 	                            ChatMessage chatMessage = new ChatMessage(json);
@@ -329,20 +337,22 @@ public class SampleService extends Service {
                         mListener.start();
 
                         /* Sending registration */
-	                    //TODO make this service automatically create the registration request message
-                        RegistrationRequest registrationRequest = (RegistrationRequest)msg.obj;
-                        Log.e(TAG, msg.obj.toString());
-                        registrationRequest.ts = lastMessageTs;
-                        try {
-                            json = registrationRequest.toJSONString();
-                            out.writeBytes(json);
-                            out.flush();
-                        } catch (JSONException je) {
-                            je.printStackTrace();
-                        } catch (IOException e) {
-                            Log.e(TAG, "unable to send message");
-                            e.printStackTrace();
-                            break;
+                        //TODO make this service automatically create the registration request message
+                        if (boundActivityCode == SampleService.CHAT_ACTIVITY) {
+                            RegistrationRequest registrationRequest = (RegistrationRequest) msg.obj;
+                            Log.e(TAG, msg.obj.toString());
+                            registrationRequest.ts = lastMessageTs;
+                            try {
+                                json = registrationRequest.toJSONString();
+                                out.writeBytes(json);
+                                out.flush();
+                            } catch (JSONException je) {
+                                je.printStackTrace();
+                            } catch (IOException e) {
+                                Log.e(TAG, "unable to send message");
+                                e.printStackTrace();
+                                break;
+                            }
                         }
                     }
 
@@ -400,7 +410,21 @@ public class SampleService extends Service {
                         e.printStackTrace();
                     }
                     break;
-
+                case MessageTypes.COMMUTE_REQUEST:
+                    try {
+                        out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+                        CommuteRequest creq = (CommuteRequest)msg.obj;
+                        Log.i(TAG,creq.toString());
+                        String jsonCreq = creq.toJSONString();
+                        Log.i(TAG,jsonCreq);
+                        out.writeBytes(jsonCreq);
+                        out.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    break;
                 /* Sending a new chat message (and storing it in the local db) */
                 case MessageTypes.CHAT_MESSAGE:
 	                Log.i(TAG, "received chat message");
@@ -447,7 +471,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.3";
+    private static final String HOST = "192.168.1.135";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;

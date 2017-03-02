@@ -54,6 +54,11 @@
             android:label="@string/title_activity_maps"
             android:parentActivityName=".MainActivity"></activity>
 
+        <activity
+            android:name=".CommuteActivity"
+            android:label="Commute"
+            android:parentActivityName=".MainActivity"></activity>
+
         <service
             android:name=".SampleService"
             android:enabled="true"

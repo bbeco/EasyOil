@@ -31,6 +31,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -206,6 +207,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         } catch (RemoteException re) {
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
+        }
+        Message serverRegistration = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
+        serverRegistration.replyTo = mMessenger;
+        try {
+            mService.send(serverRegistration);
+        } catch (RemoteException re) {
+            /* Service has crashed, display an error */
+            Log.e(TAG, "Unable to ask for server registration");
         }
     }
 
