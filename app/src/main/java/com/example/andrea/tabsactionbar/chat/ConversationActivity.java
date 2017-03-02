@@ -91,6 +91,7 @@ public class ConversationActivity extends AppCompatActivity {
             Log.i(TAG, "Message received");
             switch (msg.what) {
 	            case MessageTypes.CHAT_MESSAGE:
+		            Log.w(TAG, "ChatMessage received");
 		            ChatMessage chatMessage = (ChatMessage) msg.obj;
 		            //TODO check if it is inserted at the end of the message list
 		            messageList.add(chatMessage);
@@ -98,11 +99,18 @@ public class ConversationActivity extends AppCompatActivity {
 		            break;
 
 	            case SampleService.MESSAGE_SENT_NOTIFICATION:
+		            Log.w(TAG, "MessageSentNotification received");
 		            /*
 		             *This message is sent by the service to this activity to update the message
 		             * list.
 		             */
 		            messageAdapter.notifyDataSetChanged();
+		            break;
+
+	            case MessageTypes.REGISTRATION_RESPONSE:
+		            Log.w(TAG, "RegistrationResponse received");
+		            break;
+
                 default:
                     Log.e(TAG, "Received unknow message");
             }
@@ -112,6 +120,7 @@ public class ConversationActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+	    Log.v(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
 
@@ -119,13 +128,15 @@ public class ConversationActivity extends AppCompatActivity {
         l.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
         l.setStackFromBottom(true);
 
-        mMessenger = new Messenger(new IncomingHandler());
-
-        /* Retriving emailAddress passed within intent */
-        Intent mIntent = getIntent();
-        recipientEmail = mIntent.getStringExtra(RECIPIENT_EMAIL_KEY);
-        userEmail = mIntent.getStringExtra(USER_EMAIL_KEY);
+	    /* Retriving emailAddress passed within intent */
+	    Intent mIntent = getIntent();
+	    recipientEmail = mIntent.getStringExtra(RECIPIENT_EMAIL_KEY);
+	    userEmail = mIntent.getStringExtra(USER_EMAIL_KEY);
 	    userFullName = mIntent.getStringExtra(USER_FULL_NAME_KEY);
+
+	    Log.i(TAG, "userEmail: " + userEmail + " recipientEmail: " + recipientEmail + " userFullName: " + userFullName);
+
+        mMessenger = new Messenger(new IncomingHandler());
 
         /* Retriving all the message for the recipient "recipientEmail" */
         ConversationsDbHelper mDbHelper = new ConversationsDbHelper(this);
@@ -150,8 +161,8 @@ public class ConversationActivity extends AppCompatActivity {
             String recipient = cursor.getString(recipientColumnIndex);
             String payload = cursor.getString(payloadColumnIndex);
             String sender = cursor.getString(senderColumnIndex);
-            int ts = cursor.getInt(timestampColumnIndex);
-            //Log.i(TAG, recipient + " " + owner + " " + payload);
+            long ts = cursor.getLong(timestampColumnIndex);
+            Log.i(TAG, "messages = " + sender + " " + recipient + " " +  payload + " " + ts);
             messageList.add(new ChatMessage(sender, recipient, payload, ts));
         }
         messageAdapter = new ChatListAdapter(getApplicationContext(), messageList, userEmail);
@@ -164,6 +175,7 @@ public class ConversationActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         Log.i(TAG, "onStart");
+
         /* Binding to the message service.
          * This is completed in an asynchronous fashion, the connection changes listener is
          * mConnection.
@@ -174,6 +186,7 @@ public class ConversationActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
+	    Log.v(TAG, "onPause");
         if (bound) {
             unregisterConversation();
             unbindService(mConnection);
@@ -190,6 +203,7 @@ public class ConversationActivity extends AppCompatActivity {
         EditText editText = (EditText) findViewById(R.id.input_message_text);
         String messageText = editText.getText().toString();
         if (messageText.equalsIgnoreCase("")) {
+	        Log.w(TAG, "Trying to send empty message");
             return;
         }
 
