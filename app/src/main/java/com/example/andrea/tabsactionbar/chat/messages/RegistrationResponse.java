@@ -26,7 +26,9 @@ public class RegistrationResponse {
 		for (int i = 0; i < array.length(); i++) {
 			JSONObject jsonMessage = array.getJSONObject(i);
 			messages.add(new ChatMessage(jsonMessage.getString("sender"),
+					jsonMessage.getString("senderName"),
 					jsonMessage.getString("recipient"),
+					jsonMessage.getString("recipientName"),
 					jsonMessage.getString("payload"),
 					Long.parseLong(jsonMessage.getString("ts"))));
 		}

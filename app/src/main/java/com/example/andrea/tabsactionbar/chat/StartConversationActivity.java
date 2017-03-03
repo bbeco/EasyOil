@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
@@ -48,15 +49,18 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
      * conversations.
      */
     protected class ConversationItem {
-        /* The name of this conversation's recipient */
-        public String recipient;
+        /* The name of this conversation */
+        public String conversationName;
         /* The last message sent in this conversation */
         public String lastMessage;
         /* Who sent the last message in this conversation */
         public String lastMessageOwner;
+	    /* The id of this conversation recipient */
+	    public String recipientId;
 
-        public ConversationItem(String recipient, String lastMessage, String lastMessageOwner) {
-            this.recipient = recipient;
+        public ConversationItem(String recipientId, String conversationName, String lastMessage, String lastMessageOwner) {
+            this.conversationName = conversationName;
+	        this.recipientId = recipientId;
             this.lastMessage = lastMessage;
             this.lastMessageOwner = lastMessageOwner;
         }
@@ -64,7 +68,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 
     /* This is the viewHolder to improve views reuse within the conversation list */
     public class ViewHolder {
-        public TextView recipient;
+        public TextView conversationTitle;
         public TextView lastMessage;
     }
 
@@ -72,15 +76,18 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
     public class OnConversationClickListener implements View.OnClickListener {
 
         private final String recipientEmail;
+	    private final String recipientFullName;
 
-        public OnConversationClickListener(String recipientEmail) {
+        public OnConversationClickListener(String recipientEmail, String recipientFullName) {
             this.recipientEmail = recipientEmail;
+	        this.recipientFullName = recipientFullName;
         }
         @Override
         public void onClick(View view) {
             Log.v(TAG, "Starting conversation with " + recipientEmail);
             Intent i = new Intent(getApplicationContext(), ConversationActivity.class);
             i.putExtra(ConversationActivity.RECIPIENT_EMAIL_KEY, recipientEmail);
+	        i.putExtra(ConversationActivity.RECIPIENT_FULL_NAME, recipientFullName);
             i.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
 	        i.putExtra(ConversationActivity.USER_FULL_NAME_KEY, userFullName);
             startActivity(i);
@@ -102,16 +109,20 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
                 viewHolder = new ViewHolder();
                 LayoutInflater inflater = LayoutInflater.from(getContext());
                 convertView = inflater.inflate(R.layout.conversation_item, parent, false);
-                viewHolder.recipient = (TextView) convertView.findViewById(R.id.recipient_text);
+                viewHolder.conversationTitle = (TextView) convertView.findViewById(R.id.recipient_text);
                 viewHolder.lastMessage = (TextView) convertView.findViewById(R.id.last_message_text);
                 convertView.setTag(viewHolder);
             } else {
                 viewHolder = (ViewHolder) convertView.getTag();
             }
 
-            viewHolder.recipient.setText(c.recipient);
-            viewHolder.lastMessage.setText(c.lastMessageOwner + ": " + c.lastMessage);
-            convertView.setOnClickListener(new OnConversationClickListener(c.recipient));
+	        String messageOwner = c.lastMessageOwner;
+	        if (messageOwner.contentEquals(userFullName)) {
+		        messageOwner = "you";
+	        }
+            viewHolder.conversationTitle.setText(c.conversationName);
+            viewHolder.lastMessage.setText(messageOwner + ": " + c.lastMessage);
+            convertView.setOnClickListener(new OnConversationClickListener(c.recipientId, c.conversationName));
             return convertView;
         }
     }
@@ -124,6 +135,12 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 
     /** This is used to receive messages from the service */
     private Messenger mMessenger = null;
+
+	 /** The list of old conversations */
+	private ArrayList<ConversationItem> conversationList;
+
+	/** This is the adapter for the conversation list */
+	ConversationAdapter conversationListAdapter;
 
     /* */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -150,6 +167,11 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         public void handleMessage(Message msg) {
             Log.i(TAG, "Message received: " + msg.arg1);
             switch (msg.what) {
+	            case MessageTypes.REGISTRATION_RESPONSE:
+		            conversationList.clear();
+		            updateConversationList();
+		            conversationListAdapter.notifyDataSetChanged();
+		            break;
                 default:
                     //TODO
             }
@@ -190,42 +212,46 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         Intent connectionIntent = new Intent(this, SampleService.class);
         bindService(connectionIntent, mConnection, BIND_AUTO_CREATE);
 
-        /* Retriving the list of old conversations and populating the list view */
-        ConversationsDbHelper mDbHelper = new ConversationsDbHelper(this);
-        SQLiteDatabase db = mDbHelper.getReadableDatabase();
-	    String query = "SELECT DISTINCT c.receiver as receiver, c.sender as sender, c.payload as payload FROM conversation c JOIN ( SELECT receiver, MAX(ts) as maxTs FROM conversation GROUP BY receiver) groupedc ON c.receiver = groupedc.receiver WHERE c.ts = maxTs AND c.receiver = '" + userEmail + "'";
-        Cursor cursor = db.rawQuery(query, null);
-        ArrayList<ConversationItem> oldConversation = new ArrayList<>();
-        while (cursor.moveToNext()) {
-            int recipientColumnIndex = cursor.getColumnIndex("receiver");
-            int payloadColumnIndex = cursor.getColumnIndex("payload");
-            int ownerColumnIndex = cursor.getColumnIndex("sender");
-            if (recipientColumnIndex == -1 || payloadColumnIndex == -1 || ownerColumnIndex == -1) {
-                Log.e(TAG, "error while reading local conversation db");
-                break;
-            }
-	        String owner = cursor.getString(ownerColumnIndex);
-            String recipient = cursor.getString(recipientColumnIndex);
-	        /*
-	         * If the last message was sent by the other person, I want the recipient to be him,
-	         * not me...
-	         */
-	        if (recipient.contentEquals(userEmail)) {
-		        recipient = owner;
-	        }
-            String payload = cursor.getString(payloadColumnIndex);
-            Log.i(TAG, recipient + " " + owner + " " + payload);
-            oldConversation.add(new ConversationItem(recipient, payload, owner));
-        }
-        cursor.close();
-        Log.i(TAG, Integer.toString(oldConversation.size()) + " conversations found");
-        ConversationAdapter adapter = new ConversationAdapter(this, oldConversation);
+	    conversationList = new ArrayList<>();
+        updateConversationList();
+        conversationListAdapter = new ConversationAdapter(this, conversationList);
         ListView listView = (ListView) findViewById(R.id.conversation_list);
-        listView.setAdapter(adapter);
+        listView.setAdapter(conversationListAdapter);
     }
 
+	/**
+	 * This method updated the conversationList when it is created at start and when a new message
+	 * arrives
+	 */
+	private void updateConversationList() {
+		/* Retriving the list of old conversations and populating the list view */
+		ConversationsDbHelper mDbHelper = new ConversationsDbHelper(this);
+		SQLiteDatabase db = mDbHelper.getReadableDatabase();
+		String query = "SELECT DISTINCT groupedc.conversation AS conversation, groupedc.conversationTitle as conversationTitle, a.senderName AS owner_name, a.payload AS payload, a.ts AS ts from (SELECT DISTINCT conversation, conversationTitle, MAX(ts) as ts FROM message GROUP BY conversation) groupedc, message a WHERE groupedc.ts = a.ts AND a.conversation = groupedc.conversation ORDER BY a.ts DESC";
+		Cursor cursor = db.rawQuery(query, null);
+		while (cursor.moveToNext()) {
+			int conversationColumnIndex = cursor.getColumnIndex("conversation");
+			int conversationTitleColumnIndex = cursor.getColumnIndex("conversationTitle");
+			int payloadColumnIndex = cursor.getColumnIndex("payload");
+			int ownerColumnIndex = cursor.getColumnIndex("owner_name");
+			if (conversationColumnIndex == -1 || conversationTitleColumnIndex == -1 ||
+					ownerColumnIndex == -1 || payloadColumnIndex == -1 ) {
+				Log.e(TAG, "error while reading local conversation db");
+				break;
+			}
+			String lastMessageOwner = cursor.getString(ownerColumnIndex);
+			String conversation = cursor.getString(conversationColumnIndex);
+			String conversationTitle = cursor.getString(conversationTitleColumnIndex);
+			String payload = cursor.getString(payloadColumnIndex);
+			Log.i(TAG, conversation + " " + lastMessageOwner + " " + payload);
+			conversationList.add(new ConversationItem(conversation, conversationTitle, payload, lastMessageOwner));
+		}
+		cursor.close();
+		Log.i(TAG, Integer.toString(conversationList.size()) + " conversations found");
+	}
 
-    /**
+
+	/**
      * Dispatch onPause() to fragments.
      */
     @Override
@@ -260,6 +286,16 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
             case R.id.action_settings:
                 // User chose the "Settings" item, show the app settings UI...
                 return true;
+
+	        case R.id.action_delete_cached_conversations:
+		        Message clearCacheMsg = Message.obtain(null, SampleService.CLEAR_CONVERSATION_CACHE);
+		        try {
+			        mService.send(clearCacheMsg);
+		        } catch (RemoteException e) {
+			        Log.e(TAG, "Unable to clear cache");
+			        e.printStackTrace();
+		        }
+		        return true;
 
             case R.id.action_search:
                 Log.i(TAG, "selected \"search\" option");
