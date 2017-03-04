@@ -44,9 +44,16 @@ public class ConversationActivity extends AppCompatActivity {
 	 * intent.
 	 */
 	public static final String USER_FULL_NAME_KEY = "userFullNameKey";
+	/*
+	 * This is the key used to pass the recipient's full name when starting this activity with an
+	 * intent.
+	 */
+	public static final String RECIPIENT_FULL_NAME = "recipientFullName";
 
 	/* The email address of the recipient */
     private String recipientEmail;
+	/* The full name of the recipient */
+	private String recipientFullName;
     /* My own email address */
     private String userEmail;
 	/* My own full name */
@@ -131,18 +138,19 @@ public class ConversationActivity extends AppCompatActivity {
 	    /* Retriving emailAddress passed within intent */
 	    Intent mIntent = getIntent();
 	    recipientEmail = mIntent.getStringExtra(RECIPIENT_EMAIL_KEY);
+	    recipientFullName = mIntent.getStringExtra(RECIPIENT_FULL_NAME);
 	    userEmail = mIntent.getStringExtra(USER_EMAIL_KEY);
 	    userFullName = mIntent.getStringExtra(USER_FULL_NAME_KEY);
 
-	    Log.i(TAG, "userEmail: " + userEmail + " recipientEmail: " + recipientEmail + " userFullName: " + userFullName);
+	    Log.i(TAG, "userEmail: " + userEmail + " recipientEmail: " + recipientEmail + " userFullName: " + userFullName + " recipientFullName: " + recipientFullName);
 
         mMessenger = new Messenger(new IncomingHandler());
 
         /* Retriving all the message for the recipient "recipientEmail" */
         ConversationsDbHelper mDbHelper = new ConversationsDbHelper(this);
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
-        String query = "SELECT receiver, sender, payload, ts " +
-                        "FROM conversation " +
+        String query = "SELECT receiver, receiverName, sender, senderName, payload, ts " +
+                        "FROM message " +
                         "WHERE (receiver=\"" + userEmail + "\" AND sender=\"" + recipientEmail + "\") " +
                         "OR (receiver=\"" + recipientEmail + "\" AND sender=\"" + userEmail + "\") " +
                         "ORDER BY ts ASC";
@@ -151,19 +159,25 @@ public class ConversationActivity extends AppCompatActivity {
         messageList = new ArrayList<>();
         while (cursor.moveToNext()) {
             int recipientColumnIndex = cursor.getColumnIndex("receiver");
+	        int recipientNameColumnIndex = cursor.getColumnIndex("receiverName");
             int payloadColumnIndex = cursor.getColumnIndex("payload");
             int senderColumnIndex = cursor.getColumnIndex("sender");
+	        int senderNameColumnIndex= cursor.getColumnIndex("senderName");
             int timestampColumnIndex = cursor.getColumnIndex("ts");
-            if (recipientColumnIndex == -1 || payloadColumnIndex == -1 || senderColumnIndex == -1 || timestampColumnIndex == -1) {
+            if (recipientColumnIndex == -1 || payloadColumnIndex == -1 || senderColumnIndex == -1 ||
+		            recipientNameColumnIndex == -1 || senderNameColumnIndex == -1 ||
+		            timestampColumnIndex == -1) {
                 Log.e(TAG, "error while reading local conversation db");
                 break;
             }
             String recipient = cursor.getString(recipientColumnIndex);
+	        String recipientName = cursor.getString(recipientNameColumnIndex);
             String payload = cursor.getString(payloadColumnIndex);
             String sender = cursor.getString(senderColumnIndex);
+	        String senderName = cursor.getString(senderNameColumnIndex);
             long ts = cursor.getLong(timestampColumnIndex);
             Log.i(TAG, "messages = " + sender + " " + recipient + " " +  payload + " " + ts);
-            messageList.add(new ChatMessage(sender, recipient, payload, ts));
+            messageList.add(new ChatMessage(sender, senderName, recipient, recipientName, payload, ts));
         }
         messageAdapter = new ChatListAdapter(getApplicationContext(), messageList, userEmail);
         //Log.d(TAG, Integer.toString(adapter.getCount()));
@@ -207,7 +221,7 @@ public class ConversationActivity extends AppCompatActivity {
             return;
         }
 
-        ChatMessage message = new ChatMessage(userEmail, recipientEmail, messageText);
+        ChatMessage message = new ChatMessage(userEmail, userFullName, recipientEmail, recipientFullName, messageText);
 	    //TODO check if this adds the message at the end of messageList
 	    messageList.add(message);
 	    Message serviceMsg = Message.obtain(null, MessageTypes.CHAT_MESSAGE, message);

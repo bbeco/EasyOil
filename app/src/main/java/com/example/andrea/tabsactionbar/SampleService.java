@@ -68,6 +68,10 @@ public class SampleService extends Service {
 	/* Opening the database */
 	private SQLiteDatabase conversationsDb;
 
+	/** user information */
+	private String userEmail;
+	private String userFullName;
+
     private class ListenerThread extends Thread {
         private static final String TAG = "ListeningThread";
         private Socket socket;
@@ -114,12 +118,11 @@ public class SampleService extends Service {
                                 }
 
                                 //if the current activity is not the expected one, discard the message and continue
-                                if (response.messages.size() > 0 && (!bound || boundActivityCode != CHAT_ACTIVITY)) {
+                                if (response.messages.size() > 0 && (!bound || (boundActivityCode != CHAT_ACTIVITY && boundActivityCode != START_CONVERSATION_ACTIVITY))) {
                                     Log.w(TAG, "received new message for an unbound activity");
                                     //TODO handle the message (show notification)
                                     continue;
-                                }
-                                if(boundActivityCode == SampleService.CHAT_ACTIVITY) {
+                                } else {
                                     Message msg = Message.obtain(null, MessageTypes.REGISTRATION_RESPONSE);
                                     boundActivityMessenger.send(msg);
                                 }
@@ -206,6 +209,8 @@ public class SampleService extends Service {
     public static final int CLIENT_REGISTRATION = -2;
     /** Message code to remove the activity's messenger from this service before unbinding */
     public static final int CLIENT_UNREGISTRATION = -3;
+	/** Message code to clear the conversation cache */
+	public static final int CLEAR_CONVERSATION_CACHE = -4;
 
 	/*
 	 *This is sent back to the activity by the service so that the activity can upate the message
@@ -232,6 +237,10 @@ public class SampleService extends Service {
             switch (msg.what) {
                 case CHECK_UNREAD_MESSAGES: //register and check for incoming messages
                     Log.i(TAG, "Checking unread messages");
+	                if (userEmail == null || userFullName == null) {
+		                Log.w(TAG, "unable to check for new message: either userEmail or userFullName is null");
+		                break;
+	                }
                     if (socket == null) {
                         try {
                             socket = new Socket(HOST, PORT);
@@ -249,9 +258,8 @@ public class SampleService extends Service {
                             break;
                         }
                     }
-					//FIXME create a request with right values
-                    RegistrationRequest regMsg = new RegistrationRequest("andrea.beconcini@gmail.com",
-                            "Andrea Beconcini", lastMessageTs);
+
+                    RegistrationRequest regMsg = new RegistrationRequest(userEmail, userFullName, lastMessageTs);
                     String json;
                     try {
                         json = regMsg.toJSONString();
@@ -334,22 +342,21 @@ public class SampleService extends Service {
                         mListener.start();
 
                         /* Sending registration */
-                        //TODO make this service automatically create the registration request message
-                        if (boundActivityCode == SampleService.CHAT_ACTIVITY) {
-                            RegistrationRequest registrationRequest = (RegistrationRequest) msg.obj;
-                            Log.e(TAG, msg.obj.toString());
-                            registrationRequest.ts = lastMessageTs;
-                            try {
-                                json = registrationRequest.toJSONString();
-                                out.writeBytes(json);
-                                out.flush();
-                            } catch (JSONException je) {
-                                je.printStackTrace();
-                            } catch (IOException e) {
-                                Log.e(TAG, "unable to send message");
-                                e.printStackTrace();
-                                break;
-                            }
+                        RegistrationRequest registrationRequest = (RegistrationRequest)msg.obj;
+	                    /* Storing user information */
+	                    userEmail = registrationRequest.userId;
+	                    userFullName = registrationRequest.name;
+                        registrationRequest.ts = lastMessageTs;
+                        try {
+                            json = registrationRequest.toJSONString();
+                            out.writeBytes(json);
+                            out.flush();
+                        } catch (JSONException je) {
+                            je.printStackTrace();
+                        } catch (IOException e) {
+                            Log.e(TAG, "unable to send message");
+                            e.printStackTrace();
+                            break;
                         }
                     }
 
@@ -362,6 +369,7 @@ public class SampleService extends Service {
                  */
                 case CLIENT_REGISTRATION:
                     Log.i(TAG, "Client activity registration. Code: " + msg.arg1);
+	                bound = true;
                     boundActivityMessenger = msg.replyTo;
                     boundActivityCode = msg.arg1;
 	                /* Saving the name of the recipient during a conversation */
@@ -373,6 +381,7 @@ public class SampleService extends Service {
                 /* Remove the current activity bound */
                 case CLIENT_UNREGISTRATION:
                     Log.i(TAG, "Client unregistration");
+	                bound = false;
                     boundActivityMessenger = null;
 	                conversationRecipient = null;
                     break;
@@ -456,6 +465,12 @@ public class SampleService extends Service {
 	                }
 	                break;
 
+	            case CLEAR_CONVERSATION_CACHE:
+		            lastMessageTs = 0;
+		            getSharedPreferences(SampleService.PREF_FILE_NAME,0).edit().remove(LAST_MESSAGE_TS_KEY).commit();
+		            //TODO optionally delete local db
+		            break;
+
                 default:
                     Log.i(TAG, "Unable to deal with incoming task");
                     super.handleMessage(msg);
@@ -468,7 +483,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.135";
+    private static final String HOST = "192.168.1.3";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
@@ -577,8 +592,18 @@ public class SampleService extends Service {
 	 */
 	protected void saveChatMessageInDb(ChatMessage chatMessage) {
 		ContentValues value = new ContentValues();
+		String conversation = chatMessage.sender;
+		String conversationTitle = chatMessage.senderName;
+		if (chatMessage.sender.contentEquals(userEmail)) {
+			conversation = chatMessage.recipient;
+			conversationTitle = chatMessage.recipientName;
+		}
+		value.put(ConversationsDbHelper.ChatMessageEntry.CONVERSATION, conversation);
+		value.put(ConversationsDbHelper.ChatMessageEntry.CONVERSATION_TITLE, conversationTitle);
 		value.put(ConversationsDbHelper.ChatMessageEntry.SENDER, chatMessage.sender);
+		value.put(ConversationsDbHelper.ChatMessageEntry.SENDER_NAME, chatMessage.senderName);
 		value.put(ConversationsDbHelper.ChatMessageEntry.RECEIVER, chatMessage.recipient);
+		value.put(ConversationsDbHelper.ChatMessageEntry.RECEIVER_NAME, chatMessage.recipientName);
 		value.put(ConversationsDbHelper.ChatMessageEntry.PAYLOAD, chatMessage.payload);
 		value.put(ConversationsDbHelper.ChatMessageEntry.TIMESTAMP, chatMessage.ts);
 		if (chatMessage.ts > lastMessageTs) {
