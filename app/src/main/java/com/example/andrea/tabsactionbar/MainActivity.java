@@ -81,10 +81,16 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             public void onClick(View view) {
                 if( AccessToken.getCurrentAccessToken() != null && !AccessToken.getCurrentAccessToken().isExpired()){
                     Intent i = new Intent(getApplicationContext(),MapsActivity.class);
-                    startActivity(i);
+	                if (userName == null || userEmail == null) {
+		                Log.e(TAG, "either user's name or email is null");
+	                } else {
+		                i.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
+		                i.putExtra(ConversationActivity.USER_FULL_NAME_KEY, userName);
+		                startActivity(i);
+	                }
                 } else {
-                    Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
-                    toast.show();
+	                Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
+	                toast.show();
                 }
 
             }

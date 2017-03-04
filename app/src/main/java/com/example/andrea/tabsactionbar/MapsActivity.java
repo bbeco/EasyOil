@@ -31,6 +31,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.example.andrea.tabsactionbar.chat.ConversationActivity;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -66,6 +67,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Messenger mService;
     private Messenger mMessenger = new Messenger(new IncomingHandler());
 
+	/* User information */
+	private String userFullName;
+	private String userEmail;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +84,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         ActionBar ab = getSupportActionBar();
 
         ab.setDisplayHomeAsUpEnabled(true);
+
+	     /* Retriving emailAddress passed within intent */
+	    Intent mIntent = getIntent();
+	    userFullName = mIntent.getStringExtra(ConversationActivity.USER_FULL_NAME_KEY);
+	    userEmail = mIntent.getStringExtra(ConversationActivity.USER_EMAIL_KEY);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -210,6 +221,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
         Message serverRegistration = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
         serverRegistration.replyTo = mMessenger;
+	    serverRegistration.obj = new RegistrationRequest(userEmail, userFullName, 0);
         try {
             mService.send(serverRegistration);
         } catch (RemoteException re) {
@@ -223,7 +235,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     private void unregisterMaps() {
         Message unregistration = Message.obtain(null, SampleService.CLIENT_UNREGISTRATION);
-        unregistration.arg1 = SampleService.MAIN_ACTIVITY;
+        unregistration.arg1 = SampleService.MAPS_ACTIVITY;
         unregistration.replyTo = mMessenger;
 
         try {
