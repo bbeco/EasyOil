@@ -1,8 +1,12 @@
 *.iml
+EasyOil.iws
 .gradle
 /local.properties
 /.idea/workspace.xml
 /.idea/libraries
+.idea/
 .DS_Store
 /build
 /captures
+app/src/debug/res/values/google_maps_api.xml
+app/src/main/res/values/facebook_api_key.xml
