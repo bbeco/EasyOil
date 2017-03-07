@@ -27,7 +27,8 @@
         </activity>
         <activity
             android:name=".chat.StartConversationActivity"
-            android:parentActivityName=".MainActivity">
+            android:parentActivityName=".MainActivity"
+            android:launchMode="singleTop">
 
             <!-- Parent activity meta-data to support 4.0 and lower -->
             <meta-data

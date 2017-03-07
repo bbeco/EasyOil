@@ -1,10 +1,14 @@
 package com.example.andrea.tabsactionbar;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -13,10 +17,14 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 
+import com.example.andrea.tabsactionbar.chat.ConversationActivity;
 import com.example.andrea.tabsactionbar.chat.ConversationsDbHelper;
 import com.example.andrea.tabsactionbar.chat.SearchUserRequest;
+import com.example.andrea.tabsactionbar.chat.StartConversationActivity;
 import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationResponse;
@@ -111,18 +119,28 @@ public class SampleService extends Service {
                                 Log.i(TAG, "registration response received");
                                 RegistrationResponse response = new RegistrationResponse(json);
 
-                                /* Saving the new messages int the local db */
+	                            /* Saving the new messages int the local db.
+                                 *
+                                 * Suppress notification only when all the incoming messages are
+								 * from the same source and we are chatting with him.
+								 */
+	                            boolean suppressNotification = bound &&
+			                            boundActivityCode == CHAT_ACTIVITY;
                                 for (ChatMessage msg : response.messages) {
 	                                /* The following saves the message and update the timestamp lastTs */
                                     saveChatMessageInDb(msg);
+	                                if (suppressNotification && !msg.sender.contentEquals(conversationRecipient)) {
+		                                suppressNotification = false;
+	                                }
                                 }
 
-                                //if the current activity is not the expected one, discard the message and continue
-                                if (response.messages.size() > 0 && (!bound || (boundActivityCode != CHAT_ACTIVITY && boundActivityCode != START_CONVERSATION_ACTIVITY))) {
-                                    Log.w(TAG, "received new message for an unbound activity");
-                                    //TODO handle the message (show notification)
-                                    continue;
-                                } else {
+                                if (!suppressNotification && response.messages.size() > 0) {
+                                    displayNotification("New messages");
+	                                if (bound && boundActivityCode == START_CONVERSATION_ACTIVITY) {
+		                                Message msg = Message.obtain(null, MessageTypes.REGISTRATION_RESPONSE);
+		                                boundActivityMessenger.send(msg);
+	                                }
+                                } else if (response.messages.size() > 0) {
                                     Message msg = Message.obtain(null, MessageTypes.REGISTRATION_RESPONSE);
                                     boundActivityMessenger.send(msg);
                                 }
@@ -163,7 +181,7 @@ public class SampleService extends Service {
 		                            chatActivityMessage.obj = chatMessage;
 		                            boundActivityMessenger.send(chatActivityMessage);
 	                            } else {
-		                            //TODO create a notification
+		                            displayNotification("New Message");
 	                            }
 	                            break;
 
@@ -185,8 +203,6 @@ public class SampleService extends Service {
                 }
             }
             Log.i(TAG, "terminating");
-            /* Closing the database */
-            mDbHelper.close();
         }
     }
 
@@ -285,6 +301,7 @@ public class SampleService extends Service {
                         RegistrationResponse response = new RegistrationResponse(jsonReply);
                         if (response.messages.size() > 0) {
 	                        //TODO send a notification
+	                        //displayNotification("Notification title", "Hello World");
 	                        for (ChatMessage m : response.messages) {
 		                        Log.i(TAG, "message: " + m);
 	                        /* saving messages and updating timestamp */
@@ -468,7 +485,11 @@ public class SampleService extends Service {
 	            case CLEAR_CONVERSATION_CACHE:
 		            lastMessageTs = 0;
 		            getSharedPreferences(SampleService.PREF_FILE_NAME,0).edit().remove(LAST_MESSAGE_TS_KEY).commit();
-		            //TODO optionally delete local db
+		            mDbHelper = new ConversationsDbHelper(getApplicationContext());
+		            SQLiteDatabase db = mDbHelper.getWritableDatabase();
+		            int res = db.delete(ConversationsDbHelper.ChatMessageEntry.TABLE_NAME, "1", null);
+		            Log.i(TAG, Integer.toString(res) + " deleted rows");
+		            db.close();
 		            break;
 
                 default:
@@ -517,10 +538,6 @@ public class SampleService extends Service {
         /* Retriving the last saved value for the last message ts */
         SharedPreferences savedTs = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
         lastMessageTs = savedTs.getLong(LAST_MESSAGE_TS_KEY, 0); //if no save is found, default is 0
-
-	    /* Initializing connection with local database */
-	    mDbHelper = new ConversationsDbHelper(getApplicationContext());
-	    conversationsDb = mDbHelper.getWritableDatabase();
     }
 
     /*
@@ -591,6 +608,10 @@ public class SampleService extends Service {
 	 * @param chatMessage The message to be saved
 	 */
 	protected void saveChatMessageInDb(ChatMessage chatMessage) {
+		/* Initializing connection with local database */
+		mDbHelper = new ConversationsDbHelper(getApplicationContext());
+		conversationsDb = mDbHelper.getWritableDatabase();
+
 		ContentValues value = new ContentValues();
 		String conversation = chatMessage.sender;
 		String conversationTitle = chatMessage.senderName;
@@ -610,5 +631,52 @@ public class SampleService extends Service {
 			lastMessageTs = chatMessage.ts;
 		}
 		conversationsDb.insert(ConversationsDbHelper.ChatMessageEntry.TABLE_NAME, null, value);
+		conversationsDb.close();
+	}
+
+	/**
+	 * This method shows a notification with the given text.
+	 *
+	 * @param content The notification content
+	 */
+	private void displayNotification(String content) {
+		NotificationCompat.Builder mBuilder =
+				new NotificationCompat.Builder(this)
+						.setSmallIcon(R.drawable.ic_search_white_24px)
+						.setContentTitle("EasyOil")
+						.setContentText(content)
+						.setPriority(NotificationCompat.PRIORITY_HIGH)
+						.setAutoCancel(true);
+		//Vibration
+		mBuilder.setVibrate(new long[] { 0, 200, 200, 200 });
+
+		//LED
+		mBuilder.setLights(Color.BLUE, 3000, 3000);
+
+		// Creates an explicit intent for an Activity in your app
+		Intent resultIntent = new Intent(this, StartConversationActivity.class);
+		resultIntent.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
+		resultIntent.putExtra(ConversationActivity.USER_FULL_NAME_KEY, userFullName);
+
+		// The stack builder object will contain an artificial back stack for the
+		// started Activity.
+		// This ensures that navigating backward from the Activity leads out of
+		// your application to the Home screen.
+		TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+		// Adds the back stack for the Intent (but not the Intent itself)
+		stackBuilder.addParentStack(StartConversationActivity.class);
+		// Adds the Intent that starts the Activity to the top of the stack
+		stackBuilder.addNextIntent(resultIntent);
+		PendingIntent resultPendingIntent =
+				stackBuilder.getPendingIntent(
+						0,
+						PendingIntent.FLAG_UPDATE_CURRENT
+				);
+		mBuilder.setContentIntent(resultPendingIntent);
+		NotificationManager mNotificationManager =
+				(NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		// mId allows you to update the notification later on.
+		int mId = 0;
+		mNotificationManager.notify(mId, mBuilder.build());
 	}
 }

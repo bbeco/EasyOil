@@ -173,7 +173,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 		            conversationListAdapter.notifyDataSetChanged();
 		            break;
                 default:
-                    //TODO
+                    Log.w(TAG, "Received a message this activity can not handle");
             }
             super.handleMessage(msg);
         }
@@ -250,6 +250,17 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 		Log.i(TAG, Integer.toString(conversationList.size()) + " conversations found");
 	}
 
+	/**
+	 * This is called when the activity is opened after the user clicked on a notification.
+	 * This is used to overwrite the original intent with the new one (so that the activity can
+	 * get the updated extras).
+	 *
+	 * @param intent
+	 */
+	@Override
+	public void onNewIntent(Intent intent) {
+		setIntent(intent);
+	}
 
 	/**
      * Dispatch onPause() to fragments.
@@ -288,6 +299,8 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
                 return true;
 
 	        case R.id.action_delete_cached_conversations:
+	        	conversationList.clear();
+		        conversationListAdapter.notifyDataSetChanged();
 		        Message clearCacheMsg = Message.obtain(null, SampleService.CLEAR_CONVERSATION_CACHE);
 		        try {
 			        mService.send(clearCacheMsg);
