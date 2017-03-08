@@ -8,6 +8,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -23,6 +25,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -31,8 +34,20 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.internal.IPolylineDelegate;
 import com.google.android.gms.nearby.messages.internal.MessageType;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 
 
@@ -45,7 +60,7 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
     public static final String USER_EMAIL_KEY = "userEmailKey";
     private Messenger mService;
     private Messenger mMessenger = new Messenger(new IncomingHandler());
-    Marker home, work;
+    public Marker home, work;
     String userEmail;
 
     @Override
@@ -178,6 +193,21 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
                                 .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl)));
                     }
+                /*    mMap.addPolyline((new PolylineOptions()).add(home.getPosition(),work.getPosition())
+                        .width(10)
+                        .color(Color.RED)
+                    );*/
+                    Message msgHttp = Message.obtain(null,SampleService.HTTP_REQUEST);
+                    String pathReq = "origin="+home.getPosition().latitude+","+home.getPosition().longitude+"&destination="+work.getPosition().latitude+","+work.getPosition().longitude+"&key="+getString(R.string.google_maps_key);
+                    msgHttp.obj = pathReq;
+
+                    try {
+                        mService.send(msgHttp);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+
+
                     break;
                 case MessageTypes.COMMUTE_REQUEST:
                     CommuteRequest creq = (CommuteRequest) msg.obj;
@@ -189,13 +219,11 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                                 if (home == null){
                                     home = mMap.addMarker(new MarkerOptions()
                                             .position(latLng)
-                                            .title("Home")
-                                            .snippet("Home"));
+                                            .title("Home"));
                                 } else if(work == null){
                                     work = mMap.addMarker(new MarkerOptions()
                                             .position(latLng)
-                                            .title("Work")
-                                            .snippet("Work"));
+                                            .title("Work"));
                                     CommuteRequest comreq = new CommuteRequest(home.getPosition().latitude,home.getPosition().longitude,work.getPosition().latitude,work.getPosition().longitude,userEmail);
                                     Message msg = Message.obtain(null, MessageTypes.COMMUTE_REQUEST);
                                     msg.obj = comreq;
@@ -218,12 +246,19 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home.getPosition(),8));
                     }
                     break;
+                case SampleService.HTTP_REQUEST:
+                    ArrayList<LatLng> points;
+                    points = (ArrayList<LatLng>) msg.obj;
+                    mMap.addPolyline((new PolylineOptions()).addAll(points)
+                            .width(15)
+                            .color(Color.RED)
+                    );
+                    break;
                 default:
                     Log.w(TAG, "Received an unknown task message");
                     super.handleMessage(msg);
             }
         }
     }
-
 }
 

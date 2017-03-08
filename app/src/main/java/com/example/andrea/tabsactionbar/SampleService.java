@@ -20,6 +20,7 @@ import com.example.andrea.tabsactionbar.chat.SearchUserRequest;
 import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationResponse;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.nearby.messages.internal.MessageType;
 
 import org.json.JSONException;
@@ -27,10 +28,19 @@ import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * The onStartCommand method is called with a timer. The foreground activity calls bindService.
@@ -52,6 +62,7 @@ public class SampleService extends Service {
     public static final int CHAT_ACTIVITY = 2;
     public static final int START_CONVERSATION_ACTIVITY = 3;
     public static final int COMMUTE_ACTIVITY = 4;
+    public static final int HTTP_REQUEST = 6;
     /** Currently bound activity's code (it is not meaningful if no activity is bound). This must
      * be set to one of the code described above.
      */
@@ -129,12 +140,12 @@ public class SampleService extends Service {
                                 break;
 
                             case MessageTypes.SEARCH_STATION_RESPONSE:
-                                if(!bound || boundActivityCode != MAPS_ACTIVITY){
+                                if(!bound || (boundActivityCode != MAPS_ACTIVITY && boundActivityCode!=COMMUTE_ACTIVITY)){
                                     Log.w(TAG, "received station response for an unbound activity");
                                     continue;
                                 }
                                 Log.v(TAG,"in the search station response case");
-                                if (boundActivityCode == SampleService.MAPS_ACTIVITY) {
+                                if (boundActivityCode == MAPS_ACTIVITY || boundActivityCode == COMMUTE_ACTIVITY) {
                                     SearchOilResponse sor = new SearchOilResponse(json);
                                     Message sorMsg = Message.obtain(null, MessageTypes.SEARCH_STATION_RESPONSE);
                                     sorMsg.obj = sor;
@@ -342,24 +353,25 @@ public class SampleService extends Service {
                         mListener.start();
 
                         /* Sending registration */
-                        RegistrationRequest registrationRequest = (RegistrationRequest)msg.obj;
+                        if (boundActivityCode == CHAT_ACTIVITY) {
+                            RegistrationRequest registrationRequest = (RegistrationRequest) msg.obj;
 	                    /* Storing user information */
-	                    userEmail = registrationRequest.userId;
-	                    userFullName = registrationRequest.name;
-                        registrationRequest.ts = lastMessageTs;
-                        try {
-                            json = registrationRequest.toJSONString();
-                            out.writeBytes(json);
-                            out.flush();
-                        } catch (JSONException je) {
-                            je.printStackTrace();
-                        } catch (IOException e) {
-                            Log.e(TAG, "unable to send message");
-                            e.printStackTrace();
-                            break;
+                            userEmail = registrationRequest.userId;
+                            userFullName = registrationRequest.name;
+                            registrationRequest.ts = lastMessageTs;
+                            try {
+                                json = registrationRequest.toJSONString();
+                                out.writeBytes(json);
+                                out.flush();
+                            } catch (JSONException je) {
+                                je.printStackTrace();
+                            } catch (IOException e) {
+                                Log.e(TAG, "unable to send message");
+                                e.printStackTrace();
+                                break;
+                            }
                         }
                     }
-
                     break;
 
                 /*
@@ -431,6 +443,51 @@ public class SampleService extends Service {
                         e.printStackTrace();
                     }
                     break;
+                case HTTP_REQUEST:
+                    HttpURLConnection urlConn = null;
+                    try {
+                        String pathReq = (String) msg.obj;
+                        URL url = new URL("https://maps.googleapis.com/maps/api/directions/json?"+pathReq);
+                        urlConn = (HttpURLConnection) url.openConnection();
+                        BufferedReader in = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
+
+                        StringBuilder builder = new StringBuilder();
+                        String response,s;
+                        while((s=in.readLine())!=null){
+                            builder.append(s+'\n');
+                        }
+                        response = builder.toString();
+                        int responseCode = urlConn.getResponseCode();
+                        String resp = urlConn.getResponseMessage();
+                        in.close();
+                        ArrayList<LatLng> points;
+                        points = new ArrayList<>();
+                        JSONObject obj = new JSONObject(response);
+                        List<List<HashMap<String,String>>> routes;
+                        routes = DirectionsJSONParser.parse(obj);
+                        for(int i = 0;i<routes.get(0).size();i++) {
+                            double lat = Double.parseDouble(routes.get(0).get(i).get("lat"));
+                            double lng = Double.parseDouble(routes.get(0).get(i).get("lng"));
+                            points.add(new LatLng(lat,lng));
+                        }
+                        Message pointsResp = Message.obtain(null,HTTP_REQUEST);
+                        pointsResp.obj = points;
+                        boundActivityMessenger.send(pointsResp);
+                        Log.i(TAG,response);
+                        Log.i(TAG,resp +" "+responseCode);
+//                        JSONObject obj = new JSONObject(tmp.toString());
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    } finally {
+                        urlConn.disconnect();
+                    }
+                    break;
                 /* Sending a new chat message (and storing it in the local db) */
                 case MessageTypes.CHAT_MESSAGE:
 	                Log.i(TAG, "received chat message");
@@ -483,7 +540,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.3";
+    private static final String HOST = "192.168.1.108";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
