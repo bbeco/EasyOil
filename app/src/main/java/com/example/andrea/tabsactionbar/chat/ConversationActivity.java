@@ -10,8 +10,10 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -131,16 +133,24 @@ public class ConversationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
 
-        ListView l = (ListView)findViewById(R.id.chat_list);
-        l.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
-        l.setStackFromBottom(true);
-
 	    /* Retriving emailAddress passed within intent */
 	    Intent mIntent = getIntent();
 	    recipientEmail = mIntent.getStringExtra(RECIPIENT_EMAIL_KEY);
 	    recipientFullName = mIntent.getStringExtra(RECIPIENT_FULL_NAME);
 	    userEmail = mIntent.getStringExtra(USER_EMAIL_KEY);
 	    userFullName = mIntent.getStringExtra(USER_FULL_NAME_KEY);
+
+	    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+	    setSupportActionBar(toolbar);
+	    ActionBar ab = getSupportActionBar();
+	    if (ab != null) {
+		    ab.setTitle(recipientFullName);
+		    ab.setDisplayHomeAsUpEnabled(true);
+	    }
+
+        ListView l = (ListView)findViewById(R.id.chat_list);
+        l.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
+        l.setStackFromBottom(true);
 
 	    Log.i(TAG, "userEmail: " + userEmail + " recipientEmail: " + recipientEmail + " userFullName: " + userFullName + " recipientFullName: " + recipientFullName);
 
