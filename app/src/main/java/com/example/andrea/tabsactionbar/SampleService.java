@@ -108,7 +108,7 @@ public class SampleService extends Service {
 
             while (true) {
                 byte[] buffer, tmp;
-                tmp = new byte[4096];
+                tmp = new byte[8192];
                 try {
                     res = in.read(tmp);
 
@@ -465,6 +465,7 @@ public class SampleService extends Service {
                     try {
                         String pathReq = (String) msg.obj;
                         URL url = new URL("https://maps.googleapis.com/maps/api/directions/json?"+pathReq);
+                        Log.i(TAG,pathReq);
                         urlConn = (HttpURLConnection) url.openConnection();
                         BufferedReader in = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
 
@@ -561,7 +562,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.108";
+    private static final String HOST = "192.168.1.128";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
