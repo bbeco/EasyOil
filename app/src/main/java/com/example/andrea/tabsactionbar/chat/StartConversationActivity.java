@@ -1,5 +1,6 @@
 package com.example.andrea.tabsactionbar.chat;
 
+import android.app.SearchManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -79,7 +80,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 	    private final String recipientFullName;
 
         public OnConversationClickListener(String recipientEmail, String recipientFullName) {
-            this.recipientEmail = recipientEmail;
+	        this.recipientEmail = recipientEmail;
 	        this.recipientFullName = recipientFullName;
         }
         @Override
@@ -127,7 +128,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         }
     }
 
-    /* true if this activity is currently bound to the service, false otherwise */
+	/* true if this activity is currently bound to the service, false otherwise */
     private boolean bound = false;
 
     /** This is the messenger used to communicate with the service */
@@ -172,6 +173,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 		            updateConversationList();
 		            conversationListAdapter.notifyDataSetChanged();
 		            break;
+
                 default:
                     Log.w(TAG, "Received a message this activity can not handle");
             }
@@ -184,13 +186,6 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start_conversation);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        ActionBar ab = getSupportActionBar();
-        if (ab != null) {
-            ab.setTitle(R.string.new_message);
-            ab.setDisplayHomeAsUpEnabled(true);
-        }
 
         /* Creating this app's messenger so that the service can communicate with it */
         mMessenger = new Messenger(new IncomingHandler());
@@ -266,7 +261,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
      * Dispatch onPause() to fragments.
      */
     @Override
-    protected void onPause() {
+    public void onPause() {
 	    Log.i(TAG, "onPause");
         if (bound) {
             unregisterStartConversation();
@@ -279,16 +274,27 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.new_conversation_menu, menu);
+        inflater.inflate(R.menu.options_menu, menu);
+
+	    // Associate searchable configuration with the SearchView
+	    SearchManager searchManager =
+			    (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+	    MenuItem mSearchMenuItem = menu.findItem(R.id.search);
+	    SearchView searchView = (SearchView) MenuItemCompat.getActionView(mSearchMenuItem);
+	    /* commented because it's probably wrong */
+	    //searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+	    ComponentName cn = new ComponentName(this, ChatSearchActivity.class);
+	    searchView.setSearchableInfo(searchManager.getSearchableInfo(cn));
 
         /** Retrieving the SearchView item */
-        MenuItem searchItem = menu.findItem(R.id.action_search);
+        /*MenuItem searchItem = menu.findItem(R.id.action_search);
         SearchView searchView =
-                (SearchView) MenuItemCompat.getActionView(searchItem);
+                (SearchView) MenuItemCompat.getActionView(searchItem);*/
 
         /** setting up SearchView's listener */
-        searchView.setOnQueryTextListener(this);
-        return super.onCreateOptionsMenu(menu);
+        /*searchView.setOnQueryTextListener(this);
+        return super.onCreateOptionsMenu(menu);*/
+        return true;
     }
 
     @Override
@@ -309,10 +315,6 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 			        e.printStackTrace();
 		        }
 		        return true;
-
-            case R.id.action_search:
-                Log.i(TAG, "selected \"search\" option");
-                return true;
 
             default:
                 // If we got here, the user's action was not recognized.
@@ -348,6 +350,24 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         }
         return false;
     }
+
+	/**
+	 * We override the startActivity method in order to put extras when starting the search activity
+	 * @param intent
+	 */
+	@Override
+	public void startActivity(Intent intent) {
+		// check if search intent
+		if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
+			if (userEmail == null || userFullName == null) {
+				Log.e(TAG, "either user email or name is null");
+			} else {
+				intent.putExtra(ConversationActivity.USER_FULL_NAME_KEY, userFullName);
+				intent.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
+			}
+		}
+		super.startActivity(intent);
+	}
 
     /**
      * Called when the query text is changed by the user.
