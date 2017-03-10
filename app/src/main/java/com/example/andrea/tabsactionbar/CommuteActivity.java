@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Color;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -20,12 +19,8 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -34,20 +29,8 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.maps.model.internal.IPolylineDelegate;
-import com.google.android.gms.nearby.messages.internal.MessageType;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 
 
@@ -62,6 +45,7 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
     private Messenger mMessenger = new Messenger(new IncomingHandler());
     public Marker home, work;
     String userEmail;
+    private SearchOilResponse sor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -184,30 +168,16 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case MessageTypes.SEARCH_STATION_RESPONSE:
-                    SearchOilResponse sor = (SearchOilResponse) msg.obj;
+                    sor = (SearchOilResponse) msg.obj;
                     Log.i("CommuteHandler","ricevuto ssr");
-                    for(int i = 0; i<sor.oils.size();i++){
-                        oilMarkers.add(mMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
-                                .title("oilMarker"+i)
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
-                                .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl)));
-                    }
-                /*    mMap.addPolyline((new PolylineOptions()).add(home.getPosition(),work.getPosition())
-                        .width(10)
-                        .color(Color.RED)
-                    );*/
                     Message msgHttp = Message.obtain(null,SampleService.HTTP_REQUEST);
                     String pathReq = "origin="+home.getPosition().latitude+","+home.getPosition().longitude+"&destination="+work.getPosition().latitude+","+work.getPosition().longitude+"&key="+getString(R.string.google_maps_key);
                     msgHttp.obj = pathReq;
-
                     try {
                         mService.send(msgHttp);
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
-
-
                     break;
                 case MessageTypes.COMMUTE_REQUEST:
                     CommuteRequest creq = (CommuteRequest) msg.obj;
@@ -219,11 +189,13 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                                 if (home == null){
                                     home = mMap.addMarker(new MarkerOptions()
                                             .position(latLng)
-                                            .title("Home"));
+                                            .title("Home")
+                                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
                                 } else if(work == null){
                                     work = mMap.addMarker(new MarkerOptions()
                                             .position(latLng)
-                                            .title("Work"));
+                                            .title("Work")
+                                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
                                     CommuteRequest comreq = new CommuteRequest(home.getPosition().latitude,home.getPosition().longitude,work.getPosition().latitude,work.getPosition().longitude,userEmail);
                                     Message msg = Message.obtain(null, MessageTypes.COMMUTE_REQUEST);
                                     msg.obj = comreq;
@@ -238,10 +210,12 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                     } else {
                         home = mMap.addMarker(new MarkerOptions()
                                 .position(new LatLng(creq.latHome,creq.longHome))
-                                .title("Home"));
+                                .title("Home")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
                         work = mMap.addMarker(new MarkerOptions()
                                 .position(new LatLng(creq.latWork,creq.longWork))
-                                .title("Work"));
+                                .title("Work")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(home.getPosition()));
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home.getPosition(),8));
                     }
@@ -253,12 +227,39 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                             .width(15)
                             .color(Color.RED)
                     );
+                    for(int i = 0; i < sor.oils.size(); i++){
+                        double lat1 = sor.oils.get(i).latitude;
+                        double lng1 = sor.oils.get(i).longitude;
+                        for (int j = 0; j < points.size(); j++){
+                            double lat2 = points.get(j).latitude;
+                            double lng2 = points.get(j).longitude;
+                            if (measure(lat1,lng1,lat2,lng2) < 2){
+                                oilMarkers.add(mMap.addMarker(new MarkerOptions()
+                                        .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
+                                        .title("oilMarker"+i)
+                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                                        .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl)));
+                                break;
+                            }
+                        }
+                    }
                     break;
                 default:
                     Log.w(TAG, "Received an unknown task message");
                     super.handleMessage(msg);
             }
         }
+    }
+    private double measure(double lat1, double lon1, double lat2, double lon2) {
+        final double R = 6372.8;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+
+        double a = Math.pow(Math.sin(dLat / 2),2) + Math.pow(Math.sin(dLon / 2),2) * Math.cos(lat1) * Math.cos(lat2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        return R * c;
     }
 }
 
