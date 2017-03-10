@@ -35,6 +35,24 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.example.andrea.tabsactionbar.MainActivity" />
         </activity>
+
+        <activity
+            android:name=".chat.ChatSearchActivity"
+            android:parentActivityName=".chat.StartConversationActivity"
+            android:launchMode="singleTop">
+
+            <!-- Parent activity meta-data to support 4.0 and lower -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".chat.StartConversationActivity" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" /> />
+            </intent-filter>
+
+            <meta-data android:name="android.app.searchable"
+                       android:resource="@xml/searchable" />
+        </activity>
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
              (See the file "res/values/google_maps_api.xml").
@@ -53,20 +71,21 @@
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps"
-            android:parentActivityName=".MainActivity"></activity>
+            android:parentActivityName=".MainActivity"/>
 
         <activity
             android:name=".CommuteActivity"
             android:label="Commute"
-            android:parentActivityName=".MainActivity"></activity>
+            android:parentActivityName=".MainActivity"/>
 
         <service
             android:name=".SampleService"
             android:enabled="true"
             android:exported="true" />
 
-        <activity android:name=".chat.ConversationActivity"
-            android:parentActivityName=".MainActivity"></activity>
+        <activity
+            android:name=".chat.ConversationActivity"
+            android:parentActivityName=".MainActivity"/>
     </application>
 
 </manifest>
