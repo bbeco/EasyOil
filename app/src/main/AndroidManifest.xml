@@ -27,8 +27,8 @@
         </activity>
         <activity
             android:name=".chat.StartConversationActivity"
-            android:parentActivityName=".MainActivity"
-            android:launchMode="singleTop">
+            android:launchMode="singleTop"
+            android:parentActivityName=".MainActivity">
 
             <!-- Parent activity meta-data to support 4.0 and lower -->
             <meta-data
@@ -53,20 +53,25 @@
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps"
-            android:parentActivityName=".MainActivity"></activity>
-
+            android:parentActivityName=".MainActivity" />
         <activity
             android:name=".CommuteActivity"
             android:label="Commute"
-            android:parentActivityName=".MainActivity"></activity>
+            android:parentActivityName=".MainActivity" />
 
         <service
             android:name=".SampleService"
             android:enabled="true"
             android:exported="true" />
 
-        <activity android:name=".chat.ConversationActivity"
-            android:parentActivityName=".MainActivity"></activity>
+        <activity
+            android:name=".chat.ConversationActivity"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".SettingActivity"
+            android:parentActivityName=".MainActivity"/>
+
     </application>
 
 </manifest>

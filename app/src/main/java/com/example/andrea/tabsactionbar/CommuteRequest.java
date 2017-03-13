@@ -11,13 +11,15 @@ public class CommuteRequest {
     private final int type = MessageTypes.COMMUTE_REQUEST;
     public Double latHome, longHome, latWork,longWork;
     String email;
+    boolean valid;
 
-    public CommuteRequest (Double latHome, Double longHome, Double latWork, Double longWork, String email) {
+    public CommuteRequest (Double latHome, Double longHome, Double latWork, Double longWork, String email,boolean valid) {
         this.latHome = latHome;
         this.longHome = longHome;
         this.latWork = latWork;
         this.longWork = longWork;
         this.email = email;
+        this.valid = valid;
     }
     public CommuteRequest (String s) throws JSONException {
         JSONObject obj = new JSONObject(s);
@@ -26,6 +28,7 @@ public class CommuteRequest {
         this.latWork = obj.getString("latWork").matches("")?null:Double.parseDouble(obj.getString("latWork"));
         this.longWork = obj.getString("longWork").matches("")?null:Double.parseDouble(obj.getString("longWork"));
         this.email = obj.getString("email");
+        this.valid = obj.getBoolean("valid");
     }
 
     public String toJSONString() throws JSONException {
@@ -36,6 +39,7 @@ public class CommuteRequest {
         obj.put("latWork",latWork==null?"":Double.toString(latWork));
         obj.put("longWork",longWork==null?"":Double.toString(longWork));
         obj.put("email",email);
+        obj.put("valid",valid);
         return obj.toString();
     }
 }

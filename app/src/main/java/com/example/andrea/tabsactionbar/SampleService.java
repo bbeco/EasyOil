@@ -71,6 +71,7 @@ public class SampleService extends Service {
     public static final int START_CONVERSATION_ACTIVITY = 3;
     public static final int COMMUTE_ACTIVITY = 4;
     public static final int HTTP_REQUEST = 6;
+    public static final int SETTING_ACTIVITY = 7;
     /** Currently bound activity's code (it is not meaningful if no activity is bound). This must
      * be set to one of the code described above.
      */
@@ -562,7 +563,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.133";
+    private static final String HOST = "192.168.1.131";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;

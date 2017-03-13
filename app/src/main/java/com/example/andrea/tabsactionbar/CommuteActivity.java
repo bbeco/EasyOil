@@ -138,7 +138,7 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
             bound = true;
             registerCommute();
             Log.i(TAG,"mail:"+userEmail);
-            CommuteRequest creq = new CommuteRequest(null,null,null,null,userEmail);
+            CommuteRequest creq = new CommuteRequest(null,null,null,null,userEmail,true);
             Message msg = Message.obtain(null, MessageTypes.COMMUTE_REQUEST);
             msg.obj = creq;
             try {
@@ -196,7 +196,7 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                                             .position(latLng)
                                             .title("Work")
                                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                                    CommuteRequest comreq = new CommuteRequest(home.getPosition().latitude,home.getPosition().longitude,work.getPosition().latitude,work.getPosition().longitude,userEmail);
+                                    CommuteRequest comreq = new CommuteRequest(home.getPosition().latitude,home.getPosition().longitude,work.getPosition().latitude,work.getPosition().longitude,userEmail,true);
                                     Message msg = Message.obtain(null, MessageTypes.COMMUTE_REQUEST);
                                     msg.obj = comreq;
                                     try {
