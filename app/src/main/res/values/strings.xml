@@ -16,4 +16,8 @@
     <string name="action_settings">Settings</string>
     <string name="send">Send</string>
     <string name="action_delete_cached_conversations">Delete cached conversatinos</string>
+    <string name="search_results">Search results</string>
+    <string name="old_conversations">Old conversations</string>
+    <string name="search_title">Search...</string>
+    <string name="search_hint">John Smith</string>
 </resources>

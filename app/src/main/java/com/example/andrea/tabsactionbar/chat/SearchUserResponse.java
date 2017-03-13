@@ -11,7 +11,7 @@ import java.util.Collection;
 
 public class SearchUserResponse {
 	
-	static class User {
+	public static class User {
 		  public String name = null;
 		  public String userId = null;
 		  
@@ -47,6 +47,7 @@ public class SearchUserResponse {
 			jo.put("userId", u.userId);
 			values.add(jo);
 		}
+		obj.put("names", values);
 		return obj.toString();
 	}
 

@@ -7,9 +7,6 @@
     tools:context="com.example.andrea.tabsactionbar.chat.ConversationActivity"
     android:orientation="vertical">
 
-    <include
-        layout="@layout/toolbar" />
-
     <LinearLayout
         android:id="@+id/input_message_container"
         android:layout_width="match_parent"

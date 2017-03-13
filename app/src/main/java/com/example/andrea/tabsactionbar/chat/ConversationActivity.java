@@ -140,14 +140,6 @@ public class ConversationActivity extends AppCompatActivity {
 	    userEmail = mIntent.getStringExtra(USER_EMAIL_KEY);
 	    userFullName = mIntent.getStringExtra(USER_FULL_NAME_KEY);
 
-	    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-	    setSupportActionBar(toolbar);
-	    ActionBar ab = getSupportActionBar();
-	    if (ab != null) {
-		    ab.setTitle(recipientFullName);
-		    ab.setDisplayHomeAsUpEnabled(true);
-	    }
-
         ListView l = (ListView)findViewById(R.id.chat_list);
         l.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
         l.setStackFromBottom(true);

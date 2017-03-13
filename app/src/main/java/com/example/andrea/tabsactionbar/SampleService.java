@@ -24,6 +24,7 @@ import android.util.Log;
 import com.example.andrea.tabsactionbar.chat.ConversationActivity;
 import com.example.andrea.tabsactionbar.chat.ConversationsDbHelper;
 import com.example.andrea.tabsactionbar.chat.SearchUserRequest;
+import com.example.andrea.tabsactionbar.chat.SearchUserResponse;
 import com.example.andrea.tabsactionbar.chat.StartConversationActivity;
 import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
@@ -58,7 +59,7 @@ import java.util.List;
 public class SampleService extends Service {
     private static final String TAG = "SampleService";
 
-    /* true if there are some activities bound to this service */
+	/* true if there are some activities bound to this service */
     private boolean bound;
 
     /* Currently bound activity's messenger */
@@ -71,7 +72,9 @@ public class SampleService extends Service {
     public static final int START_CONVERSATION_ACTIVITY = 3;
     public static final int COMMUTE_ACTIVITY = 4;
     public static final int HTTP_REQUEST = 6;
-    public static final int SETTING_ACTIVITY = 7;
+	public static final int CHAT_SEARCH_ACTIVITY = 7;
+    public static final int SETTING_ACTIVITY = 8;
+
     /** Currently bound activity's code (it is not meaningful if no activity is bound). This must
      * be set to one of the code described above.
      */
@@ -157,6 +160,18 @@ public class SampleService extends Service {
                                     boundActivityMessenger.send(msg);
                                 }
                                 break;
+
+	                        case MessageTypes.SEARCH_USER_RESPONSE:
+	                        	if (!bound || boundActivityCode != CHAT_SEARCH_ACTIVITY) {
+			                        Log.w(TAG, "Received SearchUserResponse for an unbound activity");
+			                        continue;
+		                        }
+		                        Log.i(TAG, "SearchUserResponse received");
+		                        SearchUserResponse searchUserResponse = new SearchUserResponse(json);
+		                        Message msgSearchUserResponse = Message.obtain(null, MessageTypes.SEARCH_USER_RESPONSE);
+		                        msgSearchUserResponse.obj = searchUserResponse;
+		                        boundActivityMessenger.send(msgSearchUserResponse);
+	                        	break;
 
                             case MessageTypes.SEARCH_STATION_RESPONSE:
                                 if(!bound || (boundActivityCode != MAPS_ACTIVITY && boundActivityCode!=COMMUTE_ACTIVITY)){
@@ -371,9 +386,9 @@ public class SampleService extends Service {
                         mListener.start();
 
                         /* Sending registration */
-                        if (boundActivityCode == CHAT_ACTIVITY) {
-                            RegistrationRequest registrationRequest = (RegistrationRequest) msg.obj;
-	                    /* Storing user information */
+                        RegistrationRequest registrationRequest = (RegistrationRequest) msg.obj;
+                        /* Storing user information */
+                        if(boundActivityCode == SampleService.CHAT_ACTIVITY) {
                             userEmail = registrationRequest.userId;
                             userFullName = registrationRequest.name;
                             registrationRequest.ts = lastMessageTs;
@@ -419,9 +434,27 @@ public class SampleService extends Service {
                 /* Search a specific user in the directory server */
                 case MessageTypes.SEARCH_USER_REQUEST:
                     SearchUserRequest userReq = (SearchUserRequest) msg.obj;
-
-                    Log.i(TAG, "Searching user " + userReq.name);
-                    break;
+                    Log.v(TAG, "Searching user " + userReq.name);
+	                if (socket == null) {
+		                Log.e(TAG, "socket is null");
+		                break;
+	                }
+	                try {
+		                if (out == null) {
+			                Log.w(TAG, "output buffer was null");
+			                out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+		                }
+		                String jsonSearchUserRequest = userReq.toJSONString();
+		                out.writeBytes(jsonSearchUserRequest);
+		                out.flush();
+	                } catch (IOException ioe) {
+		                Log.e(TAG, "unable to obtain output stream from socket");
+		                ioe.printStackTrace();
+	                } catch (JSONException e) {
+		                Log.e(TAG, "Unable to parse json");
+		                e.printStackTrace();
+	                }
+	                break;
 
                 case MessageTypes.SEARCH_STATION_REQUEST:
                     try {
