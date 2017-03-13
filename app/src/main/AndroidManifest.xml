@@ -86,6 +86,11 @@
         <activity
             android:name=".chat.ConversationActivity"
             android:parentActivityName=".MainActivity"/>
+
+        <activity
+            android:name=".SettingActivity"
+            android:parentActivityName=".MainActivity"
+            android:label="Setting"/>
     </application>
 
 </manifest>

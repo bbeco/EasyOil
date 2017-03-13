@@ -40,10 +40,10 @@ public class SettingActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setting);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+    /*    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         ActionBar ab = getSupportActionBar();
-        ab.setDisplayHomeAsUpEnabled(true);
+        ab.setDisplayHomeAsUpEnabled(true);*/
         Intent s = new Intent(this, SampleService.class);
         Log.i(TAG,"arrivati qui prima del bind");
         bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
