@@ -79,11 +79,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         oilMarkers = new ArrayList<Marker>();
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         setContentView(R.layout.activity_maps);
-  /*      Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        ActionBar ab = getSupportActionBar();
-
-        ab.setDisplayHomeAsUpEnabled(true);*/
 
 	     /* Retriving emailAddress passed within intent */
 	    Intent mIntent = getIntent();

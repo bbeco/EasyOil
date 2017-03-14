@@ -1,5 +1,6 @@
 package com.example.andrea.tabsactionbar;
 
+import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -9,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -17,6 +19,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
@@ -29,6 +32,14 @@ import com.example.andrea.tabsactionbar.chat.StartConversationActivity;
 import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationResponse;
+import com.facebook.AccessToken;
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.nearby.messages.internal.MessageType;
 
@@ -56,7 +67,7 @@ import java.util.List;
  * So the service can start the listeningthread when the activity is bound to it and make the
  * request for new messages and waiting for the reply sequence action (not parallel).
  */
-public class SampleService extends Service {
+public class SampleService extends IntentService {
     private static final String TAG = "SampleService";
 
 	/* true if there are some activities bound to this service */
@@ -95,7 +106,11 @@ public class SampleService extends Service {
 	private String userEmail;
 	private String userFullName;
 
-    private class ListenerThread extends Thread {
+	public SampleService() {
+		super("EasyOilSampleService");
+	}
+
+	private class ListenerThread extends Thread {
         private static final String TAG = "ListeningThread";
         private Socket socket;
         private DataInputStream in;
@@ -279,79 +294,8 @@ public class SampleService extends Service {
 
             switch (msg.what) {
                 case CHECK_UNREAD_MESSAGES: //register and check for incoming messages
-                    Log.i(TAG, "Checking unread messages");
-	                if (userEmail == null || userFullName == null) {
-		                Log.w(TAG, "unable to check for new message: either userEmail or userFullName is null");
-		                break;
-	                }
-                    if (socket == null) {
-                        try {
-                            socket = new Socket(HOST, PORT);
-                        } catch (IOException ioe) {
-                            Log.e(TAG, "Cannot create socket");
-                            ioe.printStackTrace();
-                            break;
-                        }
-                        try {
-                            in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-                            out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-                        } catch (IOException ioe) {
-                            Log.e(TAG, "Cannot create socket");
-                            ioe.printStackTrace();
-                            break;
-                        }
-                    }
-
-                    RegistrationRequest regMsg = new RegistrationRequest(userEmail, userFullName, lastMessageTs);
-                    String json;
-                    try {
-                        json = regMsg.toJSONString();
-                        out.writeBytes(json);
-                        out.flush();
-
-                        /* Receiving replies */
-                        byte[] tmp = new byte[4096];
-                        byte[] buffer;
-                        int res;
-
-                        res = in.read(tmp);
-                        if (res < 0) {
-                            Log.i(TAG, "Connection closed by server");
-                            break;
-                        }
-
-                        buffer = new byte[res];
-                        System.arraycopy(tmp, 0, buffer, 0, res);
-                        String jsonReply = new String(buffer);
-                        Log.i(TAG, "read: " + jsonReply);
-                        //TODO Add a test to check whether the received message type is correct
-                        RegistrationResponse response = new RegistrationResponse(jsonReply);
-                        if (response.messages.size() > 0) {
-	                        //TODO send a notification
-	                        //displayNotification("Notification title", "Hello World");
-	                        for (ChatMessage m : response.messages) {
-		                        Log.i(TAG, "message: " + m);
-	                        /* saving messages and updating timestamp */
-		                        saveChatMessageInDb(m);
-	                        }
-                        }
-
-                    } catch (JSONException je) {
-                        Log.e(TAG, "Malformed JSON string");
-                        je.printStackTrace();
-                    } catch (IOException ioe) {
-                        Log.e(TAG, "error in read call");
-                        ioe.printStackTrace();
-                    }
-                    try {
-                        socket.close();
-                    } catch (IOException e) {
-                        Log.e(TAG, "Unable to close socket");
-                        e.printStackTrace();
-                    }
-                    socket = null;
-                    break;
-
+	                checkUnreadMessages();
+	                break;
                 /*
                  * Register this client to the server and set up a listening thread for message
                  * exchanges.
@@ -393,6 +337,7 @@ public class SampleService extends Service {
                             userFullName = registrationRequest.name;
                             registrationRequest.ts = lastMessageTs;
                             try {
+	                            String json;
                                 json = registrationRequest.toJSONString();
                                 out.writeBytes(json);
                                 out.flush();
@@ -488,12 +433,10 @@ public class SampleService extends Service {
                         Log.i(TAG,jsonCreq);
                         out.writeBytes(jsonCreq);
                         out.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JSONException e) {
+                    } catch (IOException | JSONException e) {
                         e.printStackTrace();
                     }
-                    break;
+	                break;
                 case HTTP_REQUEST:
                     HttpURLConnection urlConn = null;
                     try {
@@ -528,13 +471,7 @@ public class SampleService extends Service {
                         Log.i(TAG,response);
                         Log.i(TAG,resp +" "+responseCode);
 //                        JSONObject obj = new JSONObject(tmp.toString());
-                    } catch (MalformedURLException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    } catch (RemoteException e) {
+                    } catch (RemoteException | JSONException | IOException e) {
                         e.printStackTrace();
                     } finally {
                         urlConn.disconnect();
@@ -576,7 +513,7 @@ public class SampleService extends Service {
 
 	            case CLEAR_CONVERSATION_CACHE:
 		            lastMessageTs = 0;
-		            getSharedPreferences(SampleService.PREF_FILE_NAME,0).edit().remove(LAST_MESSAGE_TS_KEY).commit();
+		            getSharedPreferences(SampleService.PREF_FILE_NAME,0).edit().remove(LAST_MESSAGE_TS_KEY).apply();
 		            mDbHelper = new ConversationsDbHelper(getApplicationContext());
 		            SQLiteDatabase db = mDbHelper.getWritableDatabase();
 		            int res = db.delete(ConversationsDbHelper.ChatMessageEntry.TABLE_NAME, "1", null);
@@ -596,7 +533,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.131";
+    private static final String HOST = "192.168.1.3";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
@@ -606,8 +543,6 @@ public class SampleService extends Service {
     private static final String PREF_FILE_NAME = "com.example.andrea.tabsactionbar.saved_ts";
     /* This is the key used for saving the last message ts in the PREF_FILE_NAME file */
     private static final String LAST_MESSAGE_TS_KEY = "savedTs";
-
-    public SampleService() {}
 
     @Override
     public void onCreate() {
@@ -632,25 +567,6 @@ public class SampleService extends Service {
         lastMessageTs = savedTs.getLong(LAST_MESSAGE_TS_KEY, 0); //if no save is found, default is 0
     }
 
-    /*
-     * This method is executed by the main thread of the application it belongs to.
-     */
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.i(TAG, "onStartCommand");
-        // The service is starting, due to a call to startService()
-        if (bound) {
-            /* Nothing to do when the alarm goes off. The activity is managing the service. */
-            return START_NOT_STICKY;
-        }
-
-        /* registering to the server */
-        Message msg = mServiceHandler.obtainMessage();
-        msg.what = CHECK_UNREAD_MESSAGES;
-        mServiceHandler.sendMessage(msg);
-        return START_NOT_STICKY;
-    }
-
     /**
      * When binding to the service, we return an interface to our messenger
      * for sending messages to the service.
@@ -662,7 +578,44 @@ public class SampleService extends Service {
         return mMessenger.getBinder();
     }
 
-    @Override
+	/**
+	 * This is called when the service is periodically started by the alarm
+	 * @param intent
+	 */
+	@Override
+	protected void onHandleIntent(@Nullable Intent intent) {
+		Log.i(TAG, "onHandleIntent");
+		AccessToken accessToken = AccessToken.getCurrentAccessToken();
+		if (accessToken == null || accessToken.isExpired()) {
+			Log.d(TAG, "FB AccessToken is either null or expired");
+			return;
+		}
+		GraphRequest request = GraphRequest.newMeRequest(
+				accessToken,
+				new GraphRequest.GraphJSONObjectCallback() {
+					@Override
+					public void onCompleted(JSONObject object, GraphResponse response) {
+						try {
+							userFullName = object.getString("name");
+							userEmail = object.getString("email");
+						} catch (JSONException e) {
+							e.printStackTrace();
+						}
+						Log.d(TAG, "FB callback completed");
+					}
+				});
+		Bundle parameters = new Bundle();
+		parameters.putString("fields", "id,name,link,email");
+		request.setParameters(parameters);
+		Log.i(TAG, "Requesting fb credentials");
+		request.executeAndWait();
+		Log.d(TAG, "username: " + userFullName + " useremail: " + userEmail);
+		Log.d(TAG, "Looking for new messages");
+		checkUnreadMessages();
+		AlarmReceiver.completeWakefulIntent(intent);
+	}
+
+	@Override
     public boolean onUnbind(Intent intent) {
         Log.i(TAG, "onUnbind");
         // All clients have unbound with unbindService()
@@ -681,7 +634,7 @@ public class SampleService extends Service {
                 e.printStackTrace();
             }
         }
-        return false;
+        return super.onUnbind(intent);
     }
 
     @Override
@@ -693,6 +646,7 @@ public class SampleService extends Service {
         SharedPreferences.Editor editor = savedTs.edit();
         editor.putLong(LAST_MESSAGE_TS_KEY, lastMessageTs);
         editor.apply();
+	    super.onDestroy();
     }
 
 	/**
@@ -770,5 +724,81 @@ public class SampleService extends Service {
 		// mId allows you to update the notification later on.
 		int mId = 0;
 		mNotificationManager.notify(mId, mBuilder.build());
+	}
+
+	private void checkUnreadMessages() {
+		Log.i(TAG, "Checking unread messages");
+
+		/* Checking fb AccessToken */
+		AccessToken.getCurrentAccessToken();
+		if (userEmail == null || userFullName == null) {
+			Log.w(TAG, "unable to check for new message: either userEmail or userFullName is null");
+			return;
+		}
+		if (socket == null) {
+			try {
+				socket = new Socket(HOST, PORT);
+			} catch (IOException ioe) {
+				Log.e(TAG, "Cannot create socket");
+				ioe.printStackTrace();
+				return;
+			}
+			try {
+				in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+				out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+			} catch (IOException ioe) {
+				Log.e(TAG, "Cannot create socket");
+				ioe.printStackTrace();
+				return;
+			}
+		}
+
+		RegistrationRequest regMsg = new RegistrationRequest(userEmail, userFullName, lastMessageTs);
+		String json;
+		try {
+			json = regMsg.toJSONString();
+			out.writeBytes(json);
+			out.flush();
+
+                        /* Receiving replies */
+			byte[] tmp = new byte[4096];
+			byte[] buffer;
+			int res;
+
+			res = in.read(tmp);
+			if (res < 0) {
+				Log.i(TAG, "Connection closed by server");
+				return;
+			}
+
+			buffer = new byte[res];
+			System.arraycopy(tmp, 0, buffer, 0, res);
+			String jsonReply = new String(buffer);
+			Log.i(TAG, "read: " + jsonReply);
+			//TODO Add a test to check whether the received message type is correct
+			RegistrationResponse response = new RegistrationResponse(jsonReply);
+			if (response.messages.size() > 0) {
+				displayNotification("New Messages");
+				for (ChatMessage m : response.messages) {
+					Log.i(TAG, "message: " + m);
+	                        /* saving messages and updating timestamp */
+					saveChatMessageInDb(m);
+				}
+			}
+
+		} catch (JSONException je) {
+			Log.e(TAG, "Malformed JSON string");
+			je.printStackTrace();
+		} catch (IOException ioe) {
+			Log.e(TAG, "error in read call");
+			ioe.printStackTrace();
+		}
+		try {
+			socket.close();
+		} catch (IOException e) {
+			Log.e(TAG, "Unable to close socket");
+			e.printStackTrace();
+		}
+		socket = null;
 	}
 }

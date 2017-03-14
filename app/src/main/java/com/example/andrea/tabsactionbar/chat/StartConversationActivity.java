@@ -304,17 +304,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
                 // User chose the "Settings" item, show the app settings UI...
                 return true;
 
-	        case R.id.action_delete_cached_conversations:
-	        	conversationList.clear();
-		        conversationListAdapter.notifyDataSetChanged();
-		        Message clearCacheMsg = Message.obtain(null, SampleService.CLEAR_CONVERSATION_CACHE);
-		        try {
-			        mService.send(clearCacheMsg);
-		        } catch (RemoteException e) {
-			        Log.e(TAG, "Unable to clear cache");
-			        e.printStackTrace();
-		        }
-		        return true;
+
 
             default:
                 // If we got here, the user's action was not recognized.

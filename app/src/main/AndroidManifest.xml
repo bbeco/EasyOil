@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_PROFILE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <application
         android:name="android.support.multidex.MultiDexApplication"
@@ -78,6 +80,16 @@
             android:label="Commute"
             android:parentActivityName=".MainActivity"/>
 
+        <activity
+            android:name=".SettingActivity"
+            android:parentActivityName=".MainActivity"
+	    android:label="Setting">
+            <!-- Parent activity meta-data to support 4.0 and lower -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.andrea.tabsactionbar.MainActivity" />
+        </activity>
+
         <service
             android:name=".SampleService"
             android:enabled="true"
@@ -85,12 +97,17 @@
 
         <activity
             android:name=".chat.ConversationActivity"
-            android:parentActivityName=".MainActivity"/>
+            android:parentActivityName=".chat.StartConversationActivity"/>
 
-        <activity
-            android:name=".SettingActivity"
-            android:parentActivityName=".MainActivity"
-            android:label="Setting"/>
+        <receiver android:name=".AlarmReceiver"/>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"></action>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
