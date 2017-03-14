@@ -1,5 +1,6 @@
 package com.example.andrea.tabsactionbar;
 
+import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -17,6 +18,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
@@ -29,6 +31,7 @@ import com.example.andrea.tabsactionbar.chat.StartConversationActivity;
 import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationResponse;
+import com.facebook.AccessToken;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.nearby.messages.internal.MessageType;
 
@@ -56,7 +59,7 @@ import java.util.List;
  * So the service can start the listeningthread when the activity is bound to it and make the
  * request for new messages and waiting for the reply sequence action (not parallel).
  */
-public class SampleService extends Service {
+public class SampleService extends IntentService {
     private static final String TAG = "SampleService";
 
 	/* true if there are some activities bound to this service */
@@ -95,7 +98,11 @@ public class SampleService extends Service {
 	private String userEmail;
 	private String userFullName;
 
-    private class ListenerThread extends Thread {
+	public SampleService() {
+		super("EasyOilSampleService");
+	}
+
+	private class ListenerThread extends Thread {
         private static final String TAG = "ListeningThread";
         private Socket socket;
         private DataInputStream in;
@@ -279,79 +286,8 @@ public class SampleService extends Service {
 
             switch (msg.what) {
                 case CHECK_UNREAD_MESSAGES: //register and check for incoming messages
-                    Log.i(TAG, "Checking unread messages");
-	                if (userEmail == null || userFullName == null) {
-		                Log.w(TAG, "unable to check for new message: either userEmail or userFullName is null");
-		                break;
-	                }
-                    if (socket == null) {
-                        try {
-                            socket = new Socket(HOST, PORT);
-                        } catch (IOException ioe) {
-                            Log.e(TAG, "Cannot create socket");
-                            ioe.printStackTrace();
-                            break;
-                        }
-                        try {
-                            in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-                            out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-                        } catch (IOException ioe) {
-                            Log.e(TAG, "Cannot create socket");
-                            ioe.printStackTrace();
-                            break;
-                        }
-                    }
-
-                    RegistrationRequest regMsg = new RegistrationRequest(userEmail, userFullName, lastMessageTs);
-                    String json;
-                    try {
-                        json = regMsg.toJSONString();
-                        out.writeBytes(json);
-                        out.flush();
-
-                        /* Receiving replies */
-                        byte[] tmp = new byte[4096];
-                        byte[] buffer;
-                        int res;
-
-                        res = in.read(tmp);
-                        if (res < 0) {
-                            Log.i(TAG, "Connection closed by server");
-                            break;
-                        }
-
-                        buffer = new byte[res];
-                        System.arraycopy(tmp, 0, buffer, 0, res);
-                        String jsonReply = new String(buffer);
-                        Log.i(TAG, "read: " + jsonReply);
-                        //TODO Add a test to check whether the received message type is correct
-                        RegistrationResponse response = new RegistrationResponse(jsonReply);
-                        if (response.messages.size() > 0) {
-	                        //TODO send a notification
-	                        //displayNotification("Notification title", "Hello World");
-	                        for (ChatMessage m : response.messages) {
-		                        Log.i(TAG, "message: " + m);
-	                        /* saving messages and updating timestamp */
-		                        saveChatMessageInDb(m);
-	                        }
-                        }
-
-                    } catch (JSONException je) {
-                        Log.e(TAG, "Malformed JSON string");
-                        je.printStackTrace();
-                    } catch (IOException ioe) {
-                        Log.e(TAG, "error in read call");
-                        ioe.printStackTrace();
-                    }
-                    try {
-                        socket.close();
-                    } catch (IOException e) {
-                        Log.e(TAG, "Unable to close socket");
-                        e.printStackTrace();
-                    }
-                    socket = null;
-                    break;
-
+	                checkUnreadMessages();
+	                break;
                 /*
                  * Register this client to the server and set up a listening thread for message
                  * exchanges.
@@ -393,6 +329,7 @@ public class SampleService extends Service {
                             userFullName = registrationRequest.name;
                             registrationRequest.ts = lastMessageTs;
                             try {
+	                            String json;
                                 json = registrationRequest.toJSONString();
                                 out.writeBytes(json);
                                 out.flush();
@@ -596,7 +533,7 @@ public class SampleService extends Service {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.131";
+    private static final String HOST = "192.168.1.3";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
@@ -606,8 +543,6 @@ public class SampleService extends Service {
     private static final String PREF_FILE_NAME = "com.example.andrea.tabsactionbar.saved_ts";
     /* This is the key used for saving the last message ts in the PREF_FILE_NAME file */
     private static final String LAST_MESSAGE_TS_KEY = "savedTs";
-
-    public SampleService() {}
 
     @Override
     public void onCreate() {
@@ -662,7 +597,18 @@ public class SampleService extends Service {
         return mMessenger.getBinder();
     }
 
-    @Override
+	/**
+	 * This is called when the service is periodically started by the alarm
+	 * @param intent
+	 */
+	@Override
+	protected void onHandleIntent(@Nullable Intent intent) {
+		Log.i(TAG, "onHandleIntent");
+		checkUnreadMessages();
+		AlarmReceiver.completeWakefulIntent(intent);
+	}
+
+	@Override
     public boolean onUnbind(Intent intent) {
         Log.i(TAG, "onUnbind");
         // All clients have unbound with unbindService()
@@ -770,5 +716,82 @@ public class SampleService extends Service {
 		// mId allows you to update the notification later on.
 		int mId = 0;
 		mNotificationManager.notify(mId, mBuilder.build());
+	}
+
+	private void checkUnreadMessages() {
+		Log.i(TAG, "Checking unread messages");
+
+		/* Checking fb AccessToken */
+		AccessToken.getCurrentAccessToken();
+		if (userEmail == null || userFullName == null) {
+			Log.w(TAG, "unable to check for new message: either userEmail or userFullName is null");
+			return;
+		}
+		if (socket == null) {
+			try {
+				socket = new Socket(HOST, PORT);
+			} catch (IOException ioe) {
+				Log.e(TAG, "Cannot create socket");
+				ioe.printStackTrace();
+				return;
+			}
+			try {
+				in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+				out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+			} catch (IOException ioe) {
+				Log.e(TAG, "Cannot create socket");
+				ioe.printStackTrace();
+				return;
+			}
+		}
+
+		RegistrationRequest regMsg = new RegistrationRequest(userEmail, userFullName, lastMessageTs);
+		String json;
+		try {
+			json = regMsg.toJSONString();
+			out.writeBytes(json);
+			out.flush();
+
+                        /* Receiving replies */
+			byte[] tmp = new byte[4096];
+			byte[] buffer;
+			int res;
+
+			res = in.read(tmp);
+			if (res < 0) {
+				Log.i(TAG, "Connection closed by server");
+				return;
+			}
+
+			buffer = new byte[res];
+			System.arraycopy(tmp, 0, buffer, 0, res);
+			String jsonReply = new String(buffer);
+			Log.i(TAG, "read: " + jsonReply);
+			//TODO Add a test to check whether the received message type is correct
+			RegistrationResponse response = new RegistrationResponse(jsonReply);
+			if (response.messages.size() > 0) {
+				//TODO send a notification
+				//displayNotification("Notification title", "Hello World");
+				for (ChatMessage m : response.messages) {
+					Log.i(TAG, "message: " + m);
+	                        /* saving messages and updating timestamp */
+					saveChatMessageInDb(m);
+				}
+			}
+
+		} catch (JSONException je) {
+			Log.e(TAG, "Malformed JSON string");
+			je.printStackTrace();
+		} catch (IOException ioe) {
+			Log.e(TAG, "error in read call");
+			ioe.printStackTrace();
+		}
+		try {
+			socket.close();
+		} catch (IOException e) {
+			Log.e(TAG, "Unable to close socket");
+			e.printStackTrace();
+		}
+		socket = null;
 	}
 }

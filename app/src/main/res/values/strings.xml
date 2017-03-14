@@ -20,4 +20,8 @@
     <string name="old_conversations">Old conversations</string>
     <string name="search_title">Search...</string>
     <string name="search_hint">John Smith</string>
+
+    <!-- Settings activity -->
+    <string name="enable_notifications">Check for notifications automatically</string>
+    <string name="clear_conversations_cache">Clear conversations cache</string>
 </resources>

@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
         } else {
             getFbElements();
         }
+
         btn_map = (Button) findViewById(R.id.btn_map);
         btn_chat = (Button) findViewById(R.id.btn_chat);
         btn_commute = (Button) findViewById(R.id.btn_commute);
