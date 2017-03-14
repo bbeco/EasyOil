@@ -3,8 +3,6 @@ package com.example.andrea.tabsactionbar;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Message;
-import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -13,7 +11,6 @@ import android.widget.Toast;
 
 import com.example.andrea.tabsactionbar.chat.ConversationActivity;
 import com.example.andrea.tabsactionbar.chat.StartConversationActivity;
-import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;

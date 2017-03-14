@@ -98,15 +98,6 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
         }
-        Message registrationRequest = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
-        registrationRequest.replyTo = mMessenger;
-
-        try {
-            mService.send(registrationRequest);
-        } catch (RemoteException re) {
-            /* Service has crashed. Nothing to do here */
-        }
-        Log.i(TAG, "registration command sent");
     }
     private void unregisterSetting() {
         Message unregistration = Message.obtain(null, SampleService.CLIENT_UNREGISTRATION);

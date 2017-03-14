@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -32,6 +33,13 @@ import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationResponse;
 import com.facebook.AccessToken;
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.nearby.messages.internal.MessageType;
 
@@ -425,12 +433,10 @@ public class SampleService extends IntentService {
                         Log.i(TAG,jsonCreq);
                         out.writeBytes(jsonCreq);
                         out.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JSONException e) {
+                    } catch (IOException | JSONException e) {
                         e.printStackTrace();
                     }
-                    break;
+	                break;
                 case HTTP_REQUEST:
                     HttpURLConnection urlConn = null;
                     try {
@@ -465,13 +471,7 @@ public class SampleService extends IntentService {
                         Log.i(TAG,response);
                         Log.i(TAG,resp +" "+responseCode);
 //                        JSONObject obj = new JSONObject(tmp.toString());
-                    } catch (MalformedURLException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    } catch (RemoteException e) {
+                    } catch (RemoteException | JSONException | IOException e) {
                         e.printStackTrace();
                     } finally {
                         urlConn.disconnect();
@@ -513,7 +513,7 @@ public class SampleService extends IntentService {
 
 	            case CLEAR_CONVERSATION_CACHE:
 		            lastMessageTs = 0;
-		            getSharedPreferences(SampleService.PREF_FILE_NAME,0).edit().remove(LAST_MESSAGE_TS_KEY).commit();
+		            getSharedPreferences(SampleService.PREF_FILE_NAME,0).edit().remove(LAST_MESSAGE_TS_KEY).apply();
 		            mDbHelper = new ConversationsDbHelper(getApplicationContext());
 		            SQLiteDatabase db = mDbHelper.getWritableDatabase();
 		            int res = db.delete(ConversationsDbHelper.ChatMessageEntry.TABLE_NAME, "1", null);
@@ -567,25 +567,6 @@ public class SampleService extends IntentService {
         lastMessageTs = savedTs.getLong(LAST_MESSAGE_TS_KEY, 0); //if no save is found, default is 0
     }
 
-    /*
-     * This method is executed by the main thread of the application it belongs to.
-     */
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.i(TAG, "onStartCommand");
-        // The service is starting, due to a call to startService()
-        if (bound) {
-            /* Nothing to do when the alarm goes off. The activity is managing the service. */
-            return START_NOT_STICKY;
-        }
-
-        /* registering to the server */
-        Message msg = mServiceHandler.obtainMessage();
-        msg.what = CHECK_UNREAD_MESSAGES;
-        mServiceHandler.sendMessage(msg);
-        return START_NOT_STICKY;
-    }
-
     /**
      * When binding to the service, we return an interface to our messenger
      * for sending messages to the service.
@@ -604,6 +585,32 @@ public class SampleService extends IntentService {
 	@Override
 	protected void onHandleIntent(@Nullable Intent intent) {
 		Log.i(TAG, "onHandleIntent");
+		AccessToken accessToken = AccessToken.getCurrentAccessToken();
+		if (accessToken == null || accessToken.isExpired()) {
+			Log.d(TAG, "FB AccessToken is either null or expired");
+			return;
+		}
+		GraphRequest request = GraphRequest.newMeRequest(
+				accessToken,
+				new GraphRequest.GraphJSONObjectCallback() {
+					@Override
+					public void onCompleted(JSONObject object, GraphResponse response) {
+						try {
+							userFullName = object.getString("name");
+							userEmail = object.getString("email");
+						} catch (JSONException e) {
+							e.printStackTrace();
+						}
+						Log.d(TAG, "FB callback completed");
+					}
+				});
+		Bundle parameters = new Bundle();
+		parameters.putString("fields", "id,name,link,email");
+		request.setParameters(parameters);
+		Log.i(TAG, "Requesting fb credentials");
+		request.executeAndWait();
+		Log.d(TAG, "username: " + userFullName + " useremail: " + userEmail);
+		Log.d(TAG, "Looking for new messages");
 		checkUnreadMessages();
 		AlarmReceiver.completeWakefulIntent(intent);
 	}
@@ -627,7 +634,7 @@ public class SampleService extends IntentService {
                 e.printStackTrace();
             }
         }
-        return false;
+        return super.onUnbind(intent);
     }
 
     @Override
@@ -639,6 +646,7 @@ public class SampleService extends IntentService {
         SharedPreferences.Editor editor = savedTs.edit();
         editor.putLong(LAST_MESSAGE_TS_KEY, lastMessageTs);
         editor.apply();
+	    super.onDestroy();
     }
 
 	/**
@@ -770,8 +778,7 @@ public class SampleService extends IntentService {
 			//TODO Add a test to check whether the received message type is correct
 			RegistrationResponse response = new RegistrationResponse(jsonReply);
 			if (response.messages.size() > 0) {
-				//TODO send a notification
-				//displayNotification("Notification title", "Hello World");
+				displayNotification("New Messages");
 				for (ChatMessage m : response.messages) {
 					Log.i(TAG, "message: " + m);
 	                        /* saving messages and updating timestamp */
