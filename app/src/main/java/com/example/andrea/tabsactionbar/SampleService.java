@@ -287,6 +287,7 @@ public class SampleService extends IntentService {
 
             switch (msg.what) {
                 case CHECK_UNREAD_MESSAGES: //register and check for incoming messages
+					Log.e(TAG, "checkUnreadmessage case");
 	                checkUnreadMessages();
 	                break;
 
@@ -542,9 +543,11 @@ public class SampleService extends IntentService {
 		Log.i(TAG, "onHandleIntent");
 		Log.d(TAG, "username: " + userFullName + " useremail: " + userEmail);
 		Log.d(TAG, "Looking for new messages");
-		getFBElements();
-		if (userFullName != null && userEmail != null) {
-			checkUnreadMessages();
+		if (!bound) {
+			getFBElements();
+			if (userFullName != null && userEmail != null) {
+				checkUnreadMessages();
+			}
 		}
 		AlarmReceiver.completeWakefulIntent(intent);
 	}
@@ -610,6 +613,15 @@ public class SampleService extends IntentService {
         SharedPreferences.Editor editor = savedTs.edit();
         editor.putLong(LAST_MESSAGE_TS_KEY, lastMessageTs);
         editor.apply();
+	    if (socket != null) {
+		    try {
+			    socket.close();
+		    } catch (IOException e) {
+			    Log.d(TAG, "Unable to close socket");
+			    e.printStackTrace();
+		    }
+		    socket = null;
+	    }
 	    super.onDestroy();
     }
 

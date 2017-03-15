@@ -79,6 +79,9 @@ public class ConversationActivity extends AppCompatActivity {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             mService = new Messenger(iBinder);
+	        if (mService == null) {
+		        Log.e(TAG, "mService is null");
+	        }
             bound = true;
             Log.i(TAG, "Bound to SampleService");
             registerConversation();
@@ -178,7 +181,7 @@ public class ConversationActivity extends AppCompatActivity {
             String sender = cursor.getString(senderColumnIndex);
 	        String senderName = cursor.getString(senderNameColumnIndex);
             long ts = cursor.getLong(timestampColumnIndex);
-            Log.i(TAG, "messages = " + sender + " " + recipient + " " +  payload + " " + ts);
+            //Log.i(TAG, "messages = " + sender + " " + recipient + " " +  payload + " " + ts);
             messageList.add(new ChatMessage(sender, senderName, recipient, recipientName, payload, ts));
         }
         messageAdapter = new ChatListAdapter(getApplicationContext(), messageList, userEmail);
@@ -188,9 +191,9 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-        Log.i(TAG, "onStart");
+    public void onResume() {
+        super.onResume();
+        Log.i(TAG, "onResume");
 
         /* Binding to the message service.
          * This is completed in an asynchronous fashion, the connection changes listener is
@@ -204,10 +207,11 @@ public class ConversationActivity extends AppCompatActivity {
     protected void onPause() {
 	    Log.v(TAG, "onPause");
         if (bound) {
-            unregisterConversation();
-            unbindService(mConnection);
-            mService = null;
+	        unregisterConversation();
+	        unbindService(mConnection);
         }
+        mService = null;
+        bound = false;
         super.onPause();
     }
 
