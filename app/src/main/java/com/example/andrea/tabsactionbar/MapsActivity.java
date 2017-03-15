@@ -167,8 +167,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (bound) {
             unregisterMaps();
             unbindService(mServiceConnection);
-            bound = false;
         }
+        mService = null;
+	    bound = false;
         super.onPause();
     }
 

@@ -86,8 +86,9 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
         if (bound) {
             unregisterCommute();
             unbindService(mServiceConnection);
-            bound = false;
         }
+        mService = null;
+        bound = false;
         super.onPause();
     }
     private void registerCommute() {

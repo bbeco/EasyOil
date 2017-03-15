@@ -172,7 +172,7 @@ public class ChatSearchActivity extends AppCompatActivity {
 	@Override
 	public void onResume() {
 		super.onResume();
-		Log.i(TAG, "onStart");
+		Log.i(TAG, "onResume");
         /* Binding to the message service.
          * This is completed in an asynchronous fashion, the connection changes listener is
          * mConnection.
@@ -187,8 +187,9 @@ public class ChatSearchActivity extends AppCompatActivity {
 		if (bound) {
 			unregisterChatSearchActivity();
 			unbindService(mConnection);
-			mService = null;
 		}
+		mService = null;
+		bound = false;
 		super.onPause();
 	}
 

@@ -54,15 +54,17 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setting);
-	
-        Intent s = new Intent(this, SampleService.class);
-        bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     public void onResume() {
 	    super.onResume();
 	    Log.i(TAG, "onResume");
+
+	    /* Binding to service */
+	    Intent s = new Intent(this, SampleService.class);
+	    bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
+
 	    /* Retriving the last saved value for notification setting */
 	    SharedPreferences notificationConfig = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
 	    notificationSetting = notificationConfig.getBoolean(NOTIFICATION_CONFIG_KEY, false); //if no save is found, default is false
@@ -77,8 +79,9 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
         if (bound) {
             unregisterSetting();
             unbindService(mServiceConnection);
-            bound = false;
         }
+        mService = null;
+        bound = false;
 
         /* Saving notifications setting value */
 	    SharedPreferences notificationConfig = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
@@ -87,6 +90,7 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
 	    editor.apply();
         super.onPause();
     }
+
     private void registerSetting() {
         Message registration = Message.obtain(null, SampleService.CLIENT_REGISTRATION);
         registration.arg1 = SampleService.SETTING_ACTIVITY;

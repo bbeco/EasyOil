@@ -231,9 +231,9 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        Log.i(TAG, "onStart");
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG, "onResume");
         /* Binding to the message service.
          * This is completed in an asynchronous fashion, the connection changes listener is
          * mConnection.
@@ -242,6 +242,18 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         bindService(connectionIntent, mConnection, BIND_AUTO_CREATE);
 
     }
+
+	@Override
+	public void onPause() {
+		Log.i(TAG, "onPause");
+		if (bound) {
+			unregisterStartConversation();
+			unbindService(mConnection);
+		}
+		mService = null;
+		bound = false;
+		super.onPause();
+	}
 
 	/**
 	 * This method updated the conversationList when it is created at start and when a new message
@@ -285,20 +297,6 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 	public void onNewIntent(Intent intent) {
 		setIntent(intent);
 	}
-
-	/**
-     * Dispatch onPause() to fragments.
-     */
-    @Override
-    public void onPause() {
-	    Log.i(TAG, "onPause");
-        if (bound) {
-            unregisterStartConversation();
-            unbindService(mConnection);
-            mService = null;
-        }
-        super.onPause();
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

@@ -79,9 +79,6 @@ public class ConversationActivity extends AppCompatActivity {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             mService = new Messenger(iBinder);
-	        if (mService == null) {
-		        Log.e(TAG, "mService is null");
-	        }
             bound = true;
             Log.i(TAG, "Bound to SampleService");
             registerConversation();
