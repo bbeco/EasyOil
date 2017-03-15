@@ -67,10 +67,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Messenger mService;
     private Messenger mMessenger = new Messenger(new IncomingHandler());
 
-	/* User information */
-	private String userFullName;
-	private String userEmail;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,11 +75,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         oilMarkers = new ArrayList<Marker>();
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         setContentView(R.layout.activity_maps);
-
-	     /* Retriving emailAddress passed within intent */
-	    Intent mIntent = getIntent();
-	    userFullName = mIntent.getStringExtra(ConversationActivity.USER_FULL_NAME_KEY);
-	    userEmail = mIntent.getStringExtra(ConversationActivity.USER_EMAIL_KEY);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
 
@@ -213,15 +204,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         } catch (RemoteException re) {
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
-        }
-        Message serverRegistration = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
-        serverRegistration.replyTo = mMessenger;
-	    serverRegistration.obj = new RegistrationRequest(userEmail, userFullName, 0);
-        try {
-            mService.send(serverRegistration);
-        } catch (RemoteException re) {
-            /* Service has crashed, display an error */
-            Log.e(TAG, "Unable to ask for server registration");
         }
     }
 

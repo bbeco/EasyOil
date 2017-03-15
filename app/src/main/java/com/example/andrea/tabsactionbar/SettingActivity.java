@@ -37,7 +37,6 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
     public static final String USER_EMAIL_KEY = "UserEmailKey";
     private Messenger mService;
     private boolean bound;
-    private Messenger mMessenger = new Messenger(new SettingActivity.IncomingHandler());
 
 	/* Notifications alarm */
 	private AlarmReceiver alarmReceiver = new AlarmReceiver();
@@ -91,7 +90,7 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
     private void registerSetting() {
         Message registration = Message.obtain(null, SampleService.CLIENT_REGISTRATION);
         registration.arg1 = SampleService.SETTING_ACTIVITY;
-        registration.replyTo = mMessenger;
+        registration.replyTo = null;
 
         try {
             mService.send(registration);
@@ -100,10 +99,11 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
             Log.e(TAG, "Unable to send client registration to service");
         }
     }
+
     private void unregisterSetting() {
         Message unregistration = Message.obtain(null, SampleService.CLIENT_UNREGISTRATION);
         unregistration.arg1 = SampleService.SETTING_ACTIVITY;
-        unregistration.replyTo = mMessenger;
+        unregistration.replyTo = null;
 
         try {
             mService.send(unregistration);
@@ -185,15 +185,4 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
 				break;
 		}
 	}
-
-	private class IncomingHandler extends Handler {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                default:
-                    Log.w(TAG, "Received an unknown task message");
-                    super.handleMessage(msg);
-            }
-        }
-    }
 }

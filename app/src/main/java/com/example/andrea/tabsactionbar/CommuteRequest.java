@@ -10,7 +10,7 @@ import org.json.JSONObject;
 public class CommuteRequest {
     private final int type = MessageTypes.COMMUTE_REQUEST;
     public Double latHome, longHome, latWork,longWork;
-    String email;
+    public String email;
     boolean valid;
 
     public CommuteRequest (Double latHome, Double longHome, Double latWork, Double longWork, String email,boolean valid) {

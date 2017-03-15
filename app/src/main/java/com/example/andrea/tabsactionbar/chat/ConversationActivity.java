@@ -260,18 +260,6 @@ public class ConversationActivity extends AppCompatActivity {
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
         }
-
-	    /* requesting new messages */
-	    /* Activity registration */
-	    Message serverRegistration = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
-	    serverRegistration.replyTo = mMessenger;
-	    serverRegistration.obj = new RegistrationRequest(userEmail, userFullName, 0);
-	    try {
-		    mService.send(serverRegistration);
-	    } catch (RemoteException re) {
-            /* Service has crashed, display an error */
-		    Log.e(TAG, "Unable to ask for server registration");
-	    }
     }
 
     /**

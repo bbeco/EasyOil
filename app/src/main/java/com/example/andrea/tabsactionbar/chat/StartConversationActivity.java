@@ -35,15 +35,19 @@ import com.example.andrea.tabsactionbar.SampleService;
 
 import com.example.andrea.tabsactionbar.R;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
+import com.example.andrea.tabsactionbar.chat.messages.SearchUserRequest;
+import com.facebook.AccessToken;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
 import com.google.android.gms.nearby.messages.internal.MessageType;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 
 public class StartConversationActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
     private static final String TAG = "StartConversation";
-
-    private String userEmail;
-	private String userFullName;
 
     /*
      * This is the structure for an entry in the array list associated to the list view of old
@@ -67,6 +71,10 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         }
     }
 
+    /* user information */
+    private String userFullName;
+	private String userEmail;
+
     /* This is the viewHolder to improve views reuse within the conversation list */
     public class ViewHolder {
         public TextView conversationTitle;
@@ -89,8 +97,8 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
             Intent i = new Intent(getApplicationContext(), ConversationActivity.class);
             i.putExtra(ConversationActivity.RECIPIENT_EMAIL_KEY, recipientEmail);
 	        i.putExtra(ConversationActivity.RECIPIENT_FULL_NAME, recipientFullName);
-            i.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
 	        i.putExtra(ConversationActivity.USER_FULL_NAME_KEY, userFullName);
+	        i.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
             startActivity(i);
         }
     }
@@ -187,13 +195,39 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start_conversation);
 
+	    AccessToken accessToken = AccessToken.getCurrentAccessToken();
+	    if (accessToken == null || accessToken.isExpired()) {
+		    Log.d(TAG, "FB AccessToken is either null or expired");
+		    return;
+	    }
+	    GraphRequest request = GraphRequest.newMeRequest(
+			    accessToken,
+			    new GraphRequest.GraphJSONObjectCallback() {
+				    @Override
+				    public void onCompleted(JSONObject object, GraphResponse response) {
+					    try {
+						    userFullName = object.getString("name");
+						    userEmail = object.getString("email");
+						    updateConversationList();
+						    ListView listView = (ListView) findViewById(R.id.conversation_list);
+						    listView.setAdapter(conversationListAdapter);
+					    } catch (JSONException e) {
+						    e.printStackTrace();
+					    }
+					    Log.d(TAG, "FB callback completed");
+				    }
+			    });
+	    Bundle parameters = new Bundle();
+	    parameters.putString("fields", "id,name,link,email");
+	    request.setParameters(parameters);
+	    Log.i(TAG, "Requesting fb credentials");
+	    request.executeAsync();
+
         /* Creating this app's messenger so that the service can communicate with it */
         mMessenger = new Messenger(new IncomingHandler());
 
-	    /* Retriving emailAddress passed within intent */
-	    Intent mIntent = getIntent();
-	    userFullName = mIntent.getStringExtra(ConversationActivity.USER_FULL_NAME_KEY);
-	    userEmail = mIntent.getStringExtra(ConversationActivity.USER_EMAIL_KEY);
+	    conversationList = new ArrayList<>();
+	    conversationListAdapter = new ConversationAdapter(this, conversationList);
     }
 
     @Override
@@ -207,11 +241,6 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
         Intent connectionIntent = new Intent(this, SampleService.class);
         bindService(connectionIntent, mConnection, BIND_AUTO_CREATE);
 
-	    conversationList = new ArrayList<>();
-        updateConversationList();
-        conversationListAdapter = new ConversationAdapter(this, conversationList);
-        ListView listView = (ListView) findViewById(R.id.conversation_list);
-        listView.setAdapter(conversationListAdapter);
     }
 
 	/**
@@ -328,11 +357,9 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
      */
     @Override
     public boolean onQueryTextSubmit(String query) {
-        SearchUserRequest msg = new SearchUserRequest();
-        msg.name = query;
-        Message message = new Message();
+        SearchUserRequest msg = new SearchUserRequest(userEmail, query, 0);
+        Message message = Message.obtain(null, MessageTypes.SEARCH_USER_REQUEST);
         message.obj = msg;
-        message.what = MessageTypes.SEARCH_USER_REQUEST;
         try {
             mService.send(message);
         } catch (RemoteException re) {
@@ -388,18 +415,6 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
         }
-
-	    /* requesting new messages */
-	    /* Activity registration */
-	    Message serverRegistration = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
-	    serverRegistration.replyTo = mMessenger;
-	    serverRegistration.obj = new RegistrationRequest(userEmail, userFullName, 0);
-	    try {
-		    mService.send(serverRegistration);
-	    } catch (RemoteException re) {
-            /* Service has crashed, display an error */
-		    Log.e(TAG, "Unable to ask for server registration");
-	    }
     }
 
     /**

@@ -28,7 +28,8 @@ import android.widget.TextView;
 import com.example.andrea.tabsactionbar.MessageTypes;
 import com.example.andrea.tabsactionbar.R;
 import com.example.andrea.tabsactionbar.SampleService;
-import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
+import com.example.andrea.tabsactionbar.chat.messages.SearchUserRequest;
+import com.example.andrea.tabsactionbar.chat.messages.SearchUserResponse;
 
 import java.util.ArrayList;
 
@@ -214,8 +215,7 @@ public class ChatSearchActivity extends AppCompatActivity {
 	 * @param query name of the user we're looking for
 	 */
 	private void sendUserRequest(String query) {
-		SearchUserRequest msg = new SearchUserRequest();
-		msg.name = query;
+		SearchUserRequest msg = new SearchUserRequest(userEmail, query, (long)0);
 		Message message = Message.obtain(null, MessageTypes.SEARCH_USER_REQUEST);
 		message.obj = msg;
 		try {
@@ -288,18 +288,6 @@ public class ChatSearchActivity extends AppCompatActivity {
 		} catch (RemoteException re) {
             /* Service has crashed, display an error */
 			Log.e(TAG, "Unable to send client registration to service");
-		}
-
-	    /* requesting new messages */
-	    /* Activity registration */
-		Message serverRegistration = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
-		serverRegistration.replyTo = mMessenger;
-		serverRegistration.obj = new RegistrationRequest(userEmail, userFullName, 0);
-		try {
-			mService.send(serverRegistration);
-		} catch (RemoteException re) {
-            /* Service has crashed, display an error */
-			Log.e(TAG, "Unable to ask for server registration");
 		}
 	}
 

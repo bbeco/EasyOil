@@ -40,11 +40,9 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
     ArrayList<Marker> oilMarkers;
     private boolean bound;
     private static final String TAG = "CommuteActivity";
-    public static final String USER_EMAIL_KEY = "userEmailKey";
     private Messenger mService;
     private Messenger mMessenger = new Messenger(new IncomingHandler());
     public Marker home, work;
-    String userEmail;
     private SearchOilResponse sor;
 
     @Override
@@ -78,8 +76,6 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        Intent myInt =  getIntent();
-        userEmail = myInt.getStringExtra(USER_EMAIL_KEY);
         Intent s = new Intent(this, SampleService.class);
         Log.i("CommuteActivity","arrivati qui prima del bind");
         bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
@@ -105,15 +101,6 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
             /* Service has crashed, display an error */
             Log.e(TAG, "Unable to send client registration to service");
         }
-        Message registrationRequest = Message.obtain(null, MessageTypes.REGISTRATION_REQUEST);
-        registrationRequest.replyTo = mMessenger;
-
-        try {
-            mService.send(registrationRequest);
-        } catch (RemoteException re) {
-            /* Service has crashed. Nothing to do here */
-        }
-        Log.i(TAG, "registration command sent");
     }
 
     /**
@@ -137,8 +124,7 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
             mService = new Messenger(service);
             bound = true;
             registerCommute();
-            Log.i(TAG,"mail:"+userEmail);
-            CommuteRequest creq = new CommuteRequest(null,null,null,null,userEmail,true);
+            CommuteRequest creq = new CommuteRequest(null,null,null,null,null,true);
             Message msg = Message.obtain(null, MessageTypes.COMMUTE_REQUEST);
             msg.obj = creq;
             try {
@@ -196,7 +182,7 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                                             .position(latLng)
                                             .title("Work")
                                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                                    CommuteRequest comreq = new CommuteRequest(home.getPosition().latitude,home.getPosition().longitude,work.getPosition().latitude,work.getPosition().longitude,userEmail,true);
+                                    CommuteRequest comreq = new CommuteRequest(home.getPosition().latitude,home.getPosition().longitude,work.getPosition().latitude,work.getPosition().longitude,null,true);
                                     Message msg = Message.obtain(null, MessageTypes.COMMUTE_REQUEST);
                                     msg.obj = comreq;
                                     try {

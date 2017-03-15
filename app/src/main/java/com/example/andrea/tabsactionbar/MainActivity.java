@@ -34,8 +34,6 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
     CallbackManager callbackManager;
     LoginButton loginButton;
 
-    private String userName, userEmail;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,7 +47,6 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             public void onSuccess(LoginResult loginResult) {
                 Toast toast = Toast.makeText(getApplicationContext(),"logged with facebook",Toast.LENGTH_SHORT);
                 toast.show();
-                getFbElements();
             }
 
             @Override
@@ -66,8 +63,6 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
         if( AccessToken.getCurrentAccessToken() == null || AccessToken.getCurrentAccessToken().isExpired()){
             Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
             toast.show();
-        } else {
-            getFbElements();
         }
 
         btn_map = (Button) findViewById(R.id.btn_map);
@@ -79,13 +74,7 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             public void onClick(View view) {
                 if( AccessToken.getCurrentAccessToken() != null && !AccessToken.getCurrentAccessToken().isExpired()){
                     Intent i = new Intent(getApplicationContext(),MapsActivity.class);
-	                if (userName == null || userEmail == null) {
-		                Log.e(TAG, "either user's name or email is null");
-	                } else {
-		                i.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
-		                i.putExtra(ConversationActivity.USER_FULL_NAME_KEY, userName);
-		                startActivity(i);
-	                }
+	                startActivity(i);
                 } else {
 	                Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
 	                toast.show();
@@ -98,13 +87,7 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             public void onClick(View view) {
                 if( AccessToken.getCurrentAccessToken() != null && !AccessToken.getCurrentAccessToken().isExpired()){
                     Intent i = new Intent(getApplicationContext(), StartConversationActivity.class);
-	                if (userName == null || userEmail == null) {
-		                Log.e(TAG, "either user's name or email is null");
-	                } else {
-		                i.putExtra(ConversationActivity.USER_EMAIL_KEY, userEmail);
-		                i.putExtra(ConversationActivity.USER_FULL_NAME_KEY, userName);
-		                startActivity(i);
-	                }
+	                startActivity(i);
                 } else {
                     Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
                     toast.show();
@@ -116,8 +99,6 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             public void onClick(View view) {
                 if( AccessToken.getCurrentAccessToken() != null && !AccessToken.getCurrentAccessToken().isExpired()){
                        Intent i = new Intent(getApplicationContext(),CommuteActivity.class);
-                        Log.i(TAG,"mail:"+userEmail);
-                       i.putExtra(CommuteActivity.USER_EMAIL_KEY,userEmail);
                        startActivity(i);
                 } else {
                     Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
@@ -130,7 +111,6 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
             public void onClick(View view) {
                 if( AccessToken.getCurrentAccessToken() != null && !AccessToken.getCurrentAccessToken().isExpired()){
                     Intent i = new Intent(getApplicationContext(),SettingActivity.class);
-                    i.putExtra(SettingActivity.USER_EMAIL_KEY,userEmail);
                     startActivity(i);
                 } else {
                     Toast toast = Toast.makeText(getApplicationContext(),"you need to login",Toast.LENGTH_SHORT);
@@ -144,31 +124,6 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         callbackManager.onActivityResult(requestCode, resultCode, data);
-    }
-
-    private void getFbElements (){
-        AccessToken t = AccessToken.getCurrentAccessToken();
-        GraphRequest request = GraphRequest.newMeRequest(
-                t,
-                new GraphRequest.GraphJSONObjectCallback() {
-                    @Override
-                    public void onCompleted(
-                            JSONObject object,
-                            GraphResponse response) {
-                        try {
-                            userName = object.getString("name");
-                            userEmail = object.getString("email");
-                            Log.v("MyLogin",userName);
-                            Log.v("MyLogin",userEmail);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-        Bundle parameters = new Bundle();
-        parameters.putString("fields", "id,name,link,email");
-        request.setParameters(parameters);
-        request.executeAsync();
     }
 
 	@Override

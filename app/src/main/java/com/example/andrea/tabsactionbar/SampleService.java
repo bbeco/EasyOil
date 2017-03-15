@@ -3,7 +3,6 @@ package com.example.andrea.tabsactionbar;
 import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -26,22 +25,16 @@ import android.util.Log;
 
 import com.example.andrea.tabsactionbar.chat.ConversationActivity;
 import com.example.andrea.tabsactionbar.chat.ConversationsDbHelper;
-import com.example.andrea.tabsactionbar.chat.SearchUserRequest;
-import com.example.andrea.tabsactionbar.chat.SearchUserResponse;
 import com.example.andrea.tabsactionbar.chat.StartConversationActivity;
 import com.example.andrea.tabsactionbar.chat.messages.ChatMessage;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
 import com.example.andrea.tabsactionbar.chat.messages.RegistrationResponse;
+import com.example.andrea.tabsactionbar.chat.messages.SearchUserRequest;
+import com.example.andrea.tabsactionbar.chat.messages.SearchUserResponse;
 import com.facebook.AccessToken;
-import com.facebook.CallbackManager;
-import com.facebook.FacebookCallback;
-import com.facebook.FacebookException;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
-import com.facebook.login.LoginManager;
-import com.facebook.login.LoginResult;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.nearby.messages.internal.MessageType;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -52,10 +45,8 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
@@ -189,6 +180,7 @@ public class SampleService extends IntentService {
 	                        	break;
 
                             case MessageTypes.SEARCH_STATION_RESPONSE:
+                            	Log.d(TAG, "SearchStationResponse received");
                                 if(!bound || (boundActivityCode != MAPS_ACTIVITY && boundActivityCode!=COMMUTE_ACTIVITY)){
                                     Log.w(TAG, "received station response for an unbound activity");
                                     continue;
@@ -202,6 +194,7 @@ public class SampleService extends IntentService {
                                 }
                                 break;
                             case MessageTypes.COMMUTE_REQUEST:
+                            	Log.d(TAG, "CommuteRequest received");
                                 if(boundActivityCode == SampleService.COMMUTE_ACTIVITY){
                                     CommuteRequest creq = new CommuteRequest(json);
                                     Message comreq = Message.obtain(null, MessageTypes.COMMUTE_REQUEST);
@@ -296,61 +289,6 @@ public class SampleService extends IntentService {
                 case CHECK_UNREAD_MESSAGES: //register and check for incoming messages
 	                checkUnreadMessages();
 	                break;
-                /*
-                 * Register this client to the server and set up a listening thread for message
-                 * exchanges.
-                 */
-                case MessageTypes.REGISTRATION_REQUEST:
-                    Log.i(TAG, "registering to remote server and starting listening thread");
-                    if (socket == null) {
-                        try {
-                            socket = new Socket(HOST, PORT);
-                        } catch (IOException ioe) {
-                            Log.e(TAG, "Cannot create socket");
-                            ioe.printStackTrace();
-                            break;
-                        }
-                        try {
-                            /* this should not be needed because of the listening thread */
-                            //in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-                            out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-                        } catch (IOException ioe) {
-                            Log.e(TAG, "Cannot create OutputStream");
-                            ioe.printStackTrace();
-                            break;
-                        }
-
-                        try {
-                            if (mListener == null) {
-                                mListener = new ListenerThread(socket);
-                            }
-                        } catch (IOException ioe) {
-                            Log.e(TAG, "Unable to create listening thread");
-                        }
-                        mListener.start();
-
-                        /* Sending registration */
-                        RegistrationRequest registrationRequest = (RegistrationRequest) msg.obj;
-                        /* Storing user information */
-                        if(boundActivityCode == SampleService.CHAT_ACTIVITY) {
-                            userEmail = registrationRequest.userId;
-                            userFullName = registrationRequest.name;
-                            registrationRequest.ts = lastMessageTs;
-                            try {
-	                            String json;
-                                json = registrationRequest.toJSONString();
-                                out.writeBytes(json);
-                                out.flush();
-                            } catch (JSONException je) {
-                                je.printStackTrace();
-                            } catch (IOException e) {
-                                Log.e(TAG, "unable to send message");
-                                e.printStackTrace();
-                                break;
-                            }
-                        }
-                    }
-                    break;
 
                 /*
                  * Register the messenger for an activitiy. The activity that is registering
@@ -363,9 +301,16 @@ public class SampleService extends IntentService {
                     boundActivityMessenger = msg.replyTo;
                     boundActivityCode = msg.arg1;
 	                /* Saving the name of the recipient during a conversation */
-	                if (boundActivityCode == SampleService.CHAT_ACTIVITY) {
+	                if (boundActivityCode == CHAT_ACTIVITY) {
 		                conversationRecipient = (String)msg.obj;
 	                }
+
+	                getFBElements();
+
+	                if (boundActivityCode == SETTING_ACTIVITY) {
+		                break;
+	                }
+	                registerActivityAndStartListening();
                     break;
 
                 /* Remove the current activity bound */
@@ -379,7 +324,7 @@ public class SampleService extends IntentService {
                 /* Search a specific user in the directory server */
                 case MessageTypes.SEARCH_USER_REQUEST:
                     SearchUserRequest userReq = (SearchUserRequest) msg.obj;
-                    Log.v(TAG, "Searching user " + userReq.name);
+                    Log.v(TAG, "Searching user " + userReq.user);
 	                if (socket == null) {
 		                Log.e(TAG, "socket is null");
 		                break;
@@ -425,9 +370,19 @@ public class SampleService extends IntentService {
                     }
                     break;
                 case MessageTypes.COMMUTE_REQUEST:
+                	if (socket == null) {
+		                try {
+			                socket = new Socket(HOST, PORT);
+		                } catch (IOException ioe) {
+			                Log.e(TAG, "Cannot create socket");
+			                ioe.printStackTrace();
+			                return;
+		                }
+	                }
                     try {
                         out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
                         CommuteRequest creq = (CommuteRequest)msg.obj;
+	                    creq.email = userEmail;
                         Log.i(TAG,creq.toString());
                         String jsonCreq = creq.toJSONString();
                         Log.i(TAG,jsonCreq);
@@ -585,6 +540,16 @@ public class SampleService extends IntentService {
 	@Override
 	protected void onHandleIntent(@Nullable Intent intent) {
 		Log.i(TAG, "onHandleIntent");
+		Log.d(TAG, "username: " + userFullName + " useremail: " + userEmail);
+		Log.d(TAG, "Looking for new messages");
+		getFBElements();
+		if (userFullName != null && userEmail != null) {
+			checkUnreadMessages();
+		}
+		AlarmReceiver.completeWakefulIntent(intent);
+	}
+
+	private void getFBElements() {
 		AccessToken accessToken = AccessToken.getCurrentAccessToken();
 		if (accessToken == null || accessToken.isExpired()) {
 			Log.d(TAG, "FB AccessToken is either null or expired");
@@ -601,7 +566,7 @@ public class SampleService extends IntentService {
 						} catch (JSONException e) {
 							e.printStackTrace();
 						}
-						Log.d(TAG, "FB callback completed");
+						Log.d(TAG, "user");
 					}
 				});
 		Bundle parameters = new Bundle();
@@ -609,10 +574,6 @@ public class SampleService extends IntentService {
 		request.setParameters(parameters);
 		Log.i(TAG, "Requesting fb credentials");
 		request.executeAndWait();
-		Log.d(TAG, "username: " + userFullName + " useremail: " + userEmail);
-		Log.d(TAG, "Looking for new messages");
-		checkUnreadMessages();
-		AlarmReceiver.completeWakefulIntent(intent);
 	}
 
 	@Override
@@ -625,7 +586,10 @@ public class SampleService extends IntentService {
         if (socket != null) {
             try {
                 socket.close();
-                mListener.join();
+	            if (mListener != null) {
+		            mListener.join();
+		            mListener = null;
+	            }
             } catch (IOException e) {
                 Log.e(TAG, "Unable to close listening thread's socket");
                 e.printStackTrace();
@@ -800,5 +764,50 @@ public class SampleService extends IntentService {
 			e.printStackTrace();
 		}
 		socket = null;
+	}
+
+	private void registerActivityAndStartListening() {
+		Log.i(TAG, "registering to remote server and starting listening thread");
+		if (socket == null) {
+			try {
+				socket = new Socket(HOST, PORT);
+			} catch (IOException ioe) {
+				Log.e(TAG, "Cannot create socket");
+				ioe.printStackTrace();
+				return;
+			}
+			try {
+                            /* this should not be needed because of the listening thread */
+				//in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+				out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+			} catch (IOException ioe) {
+				Log.e(TAG, "Cannot create OutputStream");
+				ioe.printStackTrace();
+				return;
+			}
+
+			try {
+				if (mListener == null) {
+					mListener = new ListenerThread(socket);
+				}
+			} catch (IOException ioe) {
+				Log.e(TAG, "Unable to create listening thread");
+			}
+			mListener.start();
+
+                        /* Sending registration */
+			RegistrationRequest registrationRequest = new RegistrationRequest(userEmail, userFullName, lastMessageTs);
+			try {
+				String json;
+				json = registrationRequest.toJSONString();
+				out.writeBytes(json);
+				out.flush();
+			} catch (JSONException je) {
+				je.printStackTrace();
+			} catch (IOException e) {
+				Log.e(TAG, "unable to send message");
+				e.printStackTrace();
+			}
+		}
 	}
 }

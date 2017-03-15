@@ -1,4 +1,4 @@
-package com.example.andrea.tabsactionbar.chat;
+package com.example.andrea.tabsactionbar.chat.messages;
 
 import com.example.andrea.tabsactionbar.MessageTypes;
 
