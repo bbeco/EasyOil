@@ -39,7 +39,7 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
     private boolean bound;
 
 	/* Notifications alarm */
-	private AlarmReceiver alarmReceiver = new AlarmReceiver();
+	private AlarmReceiver alarmReceiver = new AlarmReceiver();;
 
 	/* Settings' preference file */
 	private static final String PREF_FILE_NAME = "EasyOilSettingsFile";
@@ -53,6 +53,7 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+	    Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_setting);
     }
 
@@ -65,10 +66,10 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
 	    Intent s = new Intent(this, SampleService.class);
 	    bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
 
-	    /* Retriving the last saved value for notification setting */
+	    /* Retrieving the last saved value for notification setting */
 	    SharedPreferences notificationConfig = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
 	    notificationSetting = notificationConfig.getBoolean(NOTIFICATION_CONFIG_KEY, false); //if no save is found, default is false
-	    Log.i(TAG, "notificationSetting: " + notificationSetting);
+	    Log.d(TAG, "notificationSetting: " + notificationSetting);
 	    CheckBox checkBoxNotification = (CheckBox) findViewById(R.id.checkbox_notifications);
 	    checkBoxNotification.setChecked(notificationSetting);
     }
@@ -156,11 +157,11 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
 
 		/* We have one checkbox only, no need for checking id */
 		if (checked) {
-			Log.i(TAG, "Enabling notifications");
+			Log.i(TAG, "Enabling notifications. CheckBox: " + checked);
 			alarmReceiver.setAlarm(this);
 			notificationSetting = true;
 		} else {
-			Log.i(TAG, "Disabling notifications");
+			Log.i(TAG, "Disabling notifications. CheckBox: " + checked);
 			alarmReceiver.cancelAlarm(this);
 			notificationSetting = false;
 		}

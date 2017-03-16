@@ -43,6 +43,14 @@ public class AlarmReceiver extends WakefulBroadcastReceiver {
 		alarmMgr.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
 				SystemClock.elapsedRealtime(),
 				alarmPeriod, alarmIntent);
+
+		/** Enabling BootReceiver to restart the alarm when device is rebooted */
+		ComponentName receiver = new ComponentName(context, BootReceiver.class);
+		PackageManager pm = context.getPackageManager();
+
+		pm.setComponentEnabledSetting(receiver,
+				PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+				PackageManager.DONT_KILL_APP);
 	}
 
 	/**
@@ -50,9 +58,14 @@ public class AlarmReceiver extends WakefulBroadcastReceiver {
 	 */
 	public void cancelAlarm(Context context) {
 		Log.i(TAG, "cancelAlarm");
+		alarmMgr = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+		Intent intent = new Intent(context, AlarmReceiver.class);
+		alarmIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
 		// If the alarm has been set, cancel it.
 		if (alarmMgr!= null) {
 			alarmMgr.cancel(alarmIntent);
+		} else {
+			Log.w(TAG, "Alarm not canceled: AlarmManager is null");
 		}
 
 		// Disable {@code SampleBootReceiver} so that it doesn't automatically restart the
