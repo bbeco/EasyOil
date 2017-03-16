@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    tools:context="com.example.andrea.tabsactionbar.SettingActivity">
+
+    <Preference
+    android:id="@+id/button3"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="55dp"
+    android:title="Reset home/work positions"
+    android:layout_alignParentRight="true"
+    android:layout_alignParentEnd="true"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentStart="true"
+        android:key="pathReset"/>
+    <Preference
+        android:id="@+id/btn_clear_conversation_cache"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/clear_conversations_cache"
+        android:layout_below="@id/button3"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:key="convReset"
+        android:onClick="onClick"/>
+
+    <ListPreference
+        android:entries="@array/itemList"
+        android:entryValues="@array/itemList"
+        android:key="dist_pref"
+        android:title="distance coverage km" />
+
+    <ListPreference
+        android:entries="@array/fuelPref"
+        android:entryValues="@array/fuelPref"
+        android:key="fuel_pref"
+        android:title="fuel preference"/>
+
+
+    <CheckBoxPreference
+        android:id="@+id/checkbox_notifications"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onCheckboxClicked"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:defaultValue="false"
+        android:title="@string/enable_notifications"
+        android:layout_below="@+id/button5"/>
+
+
+</PreferenceScreen>

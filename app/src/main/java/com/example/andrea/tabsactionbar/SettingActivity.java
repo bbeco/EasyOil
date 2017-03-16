@@ -11,14 +11,18 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.preference.Preference;
+import android.preference.PreferenceActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -31,7 +35,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 
-public class SettingActivity extends AppCompatActivity implements Button.OnClickListener {
+public class SettingActivity extends PreferenceActivity {
 
     private static final String TAG = "SettingActivity";
     public static final String USER_EMAIL_KEY = "UserEmailKey";
@@ -49,11 +53,21 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
 
 	/* Notification setting: true = periodic check enabled, false otherwise */
 	private boolean notificationSetting;
+    @SuppressWarnings("deprecation")
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_setting);
+        addPreferencesFromResource(R.xml.setting);
+        LinearLayout root = (LinearLayout)findViewById(android.R.id.list).getParent().getParent().getParent();
+        Toolbar bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
+        root.addView(bar, 0);
+        bar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
     }
 
     @Override
@@ -66,11 +80,11 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
 	    bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
 
 	    /* Retriving the last saved value for notification setting */
-	    SharedPreferences notificationConfig = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
+	/*    SharedPreferences notificationConfig = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
 	    notificationSetting = notificationConfig.getBoolean(NOTIFICATION_CONFIG_KEY, false); //if no save is found, default is false
 	    Log.i(TAG, "notificationSetting: " + notificationSetting);
 	    CheckBox checkBoxNotification = (CheckBox) findViewById(R.id.checkbox_notifications);
-	    checkBoxNotification.setChecked(notificationSetting);
+	    checkBoxNotification.setChecked(notificationSetting);*/
     }
 
     @Override
@@ -84,10 +98,10 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
         bound = false;
 
         /* Saving notifications setting value */
-	    SharedPreferences notificationConfig = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
+/*	    SharedPreferences notificationConfig = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
 	    SharedPreferences.Editor editor = notificationConfig.edit();
 	    editor.putBoolean(NOTIFICATION_CONFIG_KEY, notificationSetting);
-	    editor.apply();
+	    editor.apply();*/
         super.onPause();
     }
 
@@ -116,13 +130,47 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
         }
     }
     private ServiceConnection mServiceConnection = new ServiceConnection() {
+        @SuppressWarnings("deprecation")
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.i(TAG, "Bound");
             mService = new Messenger(service);
             bound = true;
             registerSetting();
-            Button btnReset = (Button) findViewById(R.id.button3);
+            Preference prf_path = findPreference("pathReset");
+            prf_path.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    Log.i(TAG,"Reset home/work positions");
+                    CommuteRequest creq = new CommuteRequest(null,null,null,null,null,false);
+                    Message msg = Message.obtain(null,MessageTypes.COMMUTE_REQUEST);
+                    msg.obj = creq;
+                    try {
+                        mService.send(msg);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                    return true;
+                }
+
+            });
+            Preference prf_conv = findPreference("convReset");
+            prf_conv.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    Message clearCacheMsg = Message.obtain(null, SampleService.CLEAR_CONVERSATION_CACHE);
+                    try {
+                        mService.send(clearCacheMsg);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "Unable to clear cache");
+                        e.printStackTrace();
+                    }
+                    Toast toast = Toast.makeText(getApplicationContext(),"Conversations deleted",Toast.LENGTH_SHORT);
+                    toast.show();
+                    return true;
+                }
+            });
+     /*       Button btnReset = (Button) findViewById(R.id.button3);
             btnReset.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -138,7 +186,7 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
                         e.printStackTrace();
                     }
                 }
-            });
+            });*/
         }
 
         @Override
@@ -172,8 +220,8 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
 	 *
 	 * @param view
 	 */
-	@Override
-	public void onClick(View view) {
+//	@Override
+/*	public void onClick(View view) {
 		int btnId = view.getId();
 		switch (btnId) {
 			case R.id.btn_clear_conversation_cache:
@@ -188,5 +236,5 @@ public class SettingActivity extends AppCompatActivity implements Button.OnClick
 				toast.show();
 				break;
 		}
-	}
+	}*/
 }

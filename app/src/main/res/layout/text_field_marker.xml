@@ -14,6 +14,7 @@
         android:inputType="number|numberDecimal"
         android:maxLength="5"
         android:ems="10"
+        android:hint="Oil"
         android:background="@color/com_facebook_button_background_color_disabled"
         android:id="@+id/editText1" />
 
@@ -24,6 +25,7 @@
         android:inputType="number|numberDecimal"
         android:maxLength="5"
         android:ems="10"
+        android:hint="Diesel"
         android:background="@color/com_facebook_button_background_color_disabled"
         android:id="@+id/editText2" />
     <EditText
@@ -31,6 +33,7 @@
         android:layout_width="242dp"
         android:layout_height="wrap_content"
         android:inputType="number|numberDecimal"
+        android:hint="Gpl"
         android:maxLength="5"
         android:ems="10"
         android:background="@color/com_facebook_button_background_color_disabled"
