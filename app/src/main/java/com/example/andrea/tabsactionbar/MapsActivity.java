@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Point;
 import android.location.Location;
@@ -66,12 +67,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final String TAG = "MapsActivity";
     private Messenger mService;
     private Messenger mMessenger = new Messenger(new IncomingHandler());
-
+    boolean focused;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         bound = false;
+        focused = false;
         oilMarkers = new ArrayList<Marker>();
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         setContentView(R.layout.activity_maps);
@@ -97,6 +99,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
         listener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
@@ -107,8 +110,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         .snippet("You are here"));
                 //  userMarker.setPosition(userLocation);
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
+                if(!focused) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
+                    focused = true;
+                }
             }
 
             @Override
@@ -231,6 +237,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             registerMaps();
             SearchOilRequest req = new SearchOilRequest(userLocation.latitude,userLocation.longitude);
             Message msg = Message.obtain(null,MessageTypes.SEARCH_STATION_REQUEST);
+            SharedPreferences prf = getSharedPreferences(SettingActivity.PREFERENCE_SETTING,MODE_APPEND);
+            Log.v(TAG,prf.getString(SettingActivity.DIST_KM_KEY,"7"));
+            Log.v(TAG,prf.getString(SettingActivity.FUEL_KEY,"Oil"));
             msg.obj = req;
             try {
                 mService.send(msg);

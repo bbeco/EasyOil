@@ -6,9 +6,15 @@
         <item>30</item>
         <item>40</item>
     </string-array>
+
     <string-array name="fuelPref">
         <item>Oil</item>
         <item>Diesel</item>
         <item>Gpl</item>
+    </string-array>
+    <string-array name="fuelPrefValue">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
     </string-array>
 </resources>

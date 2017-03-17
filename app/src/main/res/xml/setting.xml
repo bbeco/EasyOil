@@ -16,7 +16,7 @@
     android:layout_alignParentEnd="true"
     android:layout_alignParentLeft="true"
     android:layout_alignParentStart="true"
-        android:key="pathReset"/>
+        android:key="path_reset"/>
     <Preference
         android:id="@+id/btn_clear_conversation_cache"
         android:layout_width="wrap_content"
@@ -27,24 +27,26 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:key="convReset"
+        android:key="conv_reset"
         android:onClick="onClick"/>
 
     <ListPreference
         android:entries="@array/itemList"
         android:entryValues="@array/itemList"
         android:key="dist_pref"
+        android:defaultValue="10"
         android:title="distance coverage km" />
 
     <ListPreference
         android:entries="@array/fuelPref"
-        android:entryValues="@array/fuelPref"
+        android:entryValues="@array/fuelPrefValue"
         android:key="fuel_pref"
+        android:defaultValue="1"
         android:title="fuel preference"/>
 
 
     <CheckBoxPreference
-        android:id="@+id/checkbox_notifications"
+        android:key="checkbox_pref"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:onClick="onCheckboxClicked"
