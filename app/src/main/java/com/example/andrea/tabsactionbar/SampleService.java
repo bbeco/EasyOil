@@ -349,6 +349,10 @@ public class SampleService extends IntentService {
 
                 case MessageTypes.SEARCH_STATION_REQUEST:
                     try {
+	                    if (socket == null) {
+		                    Log.e(TAG, "SearchStation failed with null socket");
+		                    break;
+	                    }
                         out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
 
                         SearchOilRequest req = (SearchOilRequest) msg.obj;

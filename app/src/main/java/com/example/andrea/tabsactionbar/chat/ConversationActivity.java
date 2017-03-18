@@ -132,6 +132,10 @@ public class ConversationActivity extends AppCompatActivity {
 	    Log.v(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
+	    Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
+	    setSupportActionBar(myToolbar);
+	    ActionBar ab = getSupportActionBar();
+	    ab.setDisplayHomeAsUpEnabled(true);
 
 	    /* Retriving emailAddress passed within intent */
 	    Intent mIntent = getIntent();
@@ -139,6 +143,9 @@ public class ConversationActivity extends AppCompatActivity {
 	    recipientFullName = mIntent.getStringExtra(RECIPIENT_FULL_NAME);
 	    userEmail = mIntent.getStringExtra(USER_EMAIL_KEY);
 	    userFullName = mIntent.getStringExtra(USER_FULL_NAME_KEY);
+
+
+	    ab.setTitle(recipientFullName);
 
         ListView l = (ListView)findViewById(R.id.chat_list);
         l.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);

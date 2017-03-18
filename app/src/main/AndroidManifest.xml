@@ -29,6 +29,7 @@
         </activity>
         <activity
             android:name=".chat.StartConversationActivity"
+            android:label="@string/start_conversation_title"
             android:parentActivityName=".MainActivity"
             android:launchMode="singleTop">
 

@@ -2,20 +2,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content" >
+    android:layout_height="wrap_content">
 
     <TextView
+        style="@style/ConversationItem"
         android:id="@+id/recipient_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="15sp"
         android:textStyle="bold"
+        android:paddingBottom="1.5dp"
         android:text="Recipient" />
     <TextView
         android:id="@+id/last_message_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="15sp"
-        android:text="Bye bye!" />
+        style="@style/ConversationItem"
+        android:paddingTop="1.5dp"
+        android:text="you: Bye bye!" />
 
 </LinearLayout>
