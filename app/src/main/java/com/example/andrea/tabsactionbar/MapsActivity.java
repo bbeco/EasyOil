@@ -61,6 +61,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     LocationListener listener;
     Marker userMarker;
     ArrayList<Marker> oilMarkers;
+	ArrayList<MarkerOptions> oilMarkersOptions;
     LocationManager locationManager;
     LatLng userLocation;
     private boolean bound;
@@ -75,13 +76,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         bound = false;
         focused = false;
         oilMarkers = new ArrayList<Marker>();
+	    oilMarkersOptions = new ArrayList<>();
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         setContentView(R.layout.activity_maps);
-
-	    Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
-	    setSupportActionBar(myToolbar);
-	    ActionBar ab = getSupportActionBar();
-	    ab.setDisplayHomeAsUpEnabled(true);
+	    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+	    setSupportActionBar(toolbar);
+	    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
 
@@ -115,11 +115,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 	            Log.d(TAG, "onLocationChanged");
 	            Log.d(TAG, "Location " + location.getLatitude() + " " + location.getLongitude());
                 userLocation = new LatLng(location.getLatitude(),location.getLongitude());
+	            /* Remove old user position marker before creating a new one */
+	            mMap.clear();
                 userMarker = mMap.addMarker(new MarkerOptions()
                         .position(userLocation)
                         .title("Marker in userLocation")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         .snippet("You are here"));
+
+	            /* Drawing oil station markers */
+	            for (MarkerOptions markerOptions : oilMarkersOptions) {
+		            mMap.addMarker(markerOptions);
+	            }
+
                 //  userMarker.setPosition(userLocation);
                 if(!focused) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
@@ -170,10 +178,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
             public void onMapLongClick(LatLng latLng) {
-                oilMarkers.add(mMap.addMarker(new MarkerOptions()
-                        .position(latLng)
-                        .title("oilMarker"+oilMarkers.size())
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))));
+	            MarkerOptions markerOptions = new MarkerOptions()
+			            .position(latLng)
+			            .title("oilMarker"+oilMarkers.size())
+			            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+	            oilMarkersOptions.add(markerOptions);
+                oilMarkers.add(mMap.addMarker(markerOptions));
                 getAndSendInfo(latLng.latitude,latLng.longitude,null);
             }
         });
@@ -284,11 +294,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     });
 
                     for(int i = 0; i<sor.oils.size();i++){
-                        oilMarkers.add(mMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
-                                .title("oilMarker"+i)
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
-                                .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl)));
+	                    MarkerOptions markerOptions = new MarkerOptions()
+			                    .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
+			                    .title("oilMarker"+i)
+			                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+			                    .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl);
+	                    oilMarkersOptions.add(markerOptions);
+                        oilMarkers.add(mMap.addMarker(markerOptions));
                     }
                     break;
                 default:

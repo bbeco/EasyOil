@@ -5,6 +5,9 @@
     android:layout_height="wrap_content"
     tools:context="com.example.andrea.tabsactionbar.chat.StartConversationActivity">
 
+    <include
+        layout="@layout/toolbar" />
+
     <RelativeLayout
         android:id="@+id/search_result_container"
         android:layout_width="match_parent"

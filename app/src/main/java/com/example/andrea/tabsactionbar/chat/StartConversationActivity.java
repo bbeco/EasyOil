@@ -194,6 +194,9 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start_conversation);
+	    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+	    setSupportActionBar(toolbar);
+	    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
 	    AccessToken accessToken = AccessToken.getCurrentAccessToken();
 	    if (accessToken == null || accessToken.isExpired()) {
