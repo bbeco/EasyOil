@@ -50,7 +50,7 @@ public class SettingActivity extends PreferenceActivity implements SharedPrefere
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.setting);
         LinearLayout root = (LinearLayout)findViewById(android.R.id.list).getParent().getParent().getParent();
-        Toolbar bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
+        Toolbar bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.setting_toolbar, root, false);
         root.addView(bar, 0);
         bar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override

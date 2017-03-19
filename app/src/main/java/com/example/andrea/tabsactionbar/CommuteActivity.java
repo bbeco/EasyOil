@@ -51,11 +51,11 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
         bound = false;
         oilMarkers = new ArrayList<Marker>();
         setContentView(R.layout.activity_maps);
-  /*      Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(toolbar);
-    //    ActionBar ab = getSupportActionBar();
-
-//        ab.setDisplayHomeAsUpEnabled(true);
+	    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+		ActionBar ab = getSupportActionBar();
+	    ab.setTitle("Commute");
+//      ab.setDisplayHomeAsUpEnabled(true);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.*/
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
