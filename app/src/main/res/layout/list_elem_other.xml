@@ -5,11 +5,14 @@
 
 
 
-    <ImageView
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@mipmap/ic_launcher"
-        android:id="@+id/my_image_view"/>
+        android:id="@+id/text_user_name"
+        android:textStyle="bold"
+        android:textColor="@color/chatUserNameBlue"
+        android:text="Paolino Paperino"
+        style="@style/ConversationItem"/>
 
     <TextView
         android:layout_width="match_parent"
@@ -17,6 +20,7 @@
         android:id="@+id/message_text"
         android:textColor="@color/wallet_primary_text_holo_light"
         android:text="prova"
-        android:layout_toRightOf="@id/my_image_view"/>
+        android:layout_below="@id/text_user_name"
+        style="@style/ConversationItem"/>
 
 </RelativeLayout>

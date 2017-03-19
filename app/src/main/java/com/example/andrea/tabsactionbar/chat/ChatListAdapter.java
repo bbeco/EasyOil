@@ -1,6 +1,7 @@
 package com.example.andrea.tabsactionbar.chat;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -69,17 +70,19 @@ public class ChatListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder = null;
         int type = getItemViewType(position);
-        //Log.d("CustomAdapter", "Item " + position + " type : " + type);
+        Log.d("CustomAdapter", "Item " + position + " type : " + type);
         if (convertView == null) {
             holder = new ViewHolder();
             switch (type) {
                 case MY_MSG_TYPE:
                     convertView = mInflater.inflate(R.layout.list_elem_mine, parent, false);
+	                holder.userName = (TextView) convertView.findViewById(R.id.text_user_name);
                     holder.text = (TextView) convertView.findViewById(R.id.message_text);
                     break;
 
                 case OTHER_MESSAGE_TYPE:
                     convertView = mInflater.inflate(R.layout.list_elem_other, parent, false);
+	                holder.userName = (TextView) convertView.findViewById(R.id.text_user_name);
                     holder.text = (TextView) convertView.findViewById(R.id.message_text);
                     break;
             }
@@ -88,11 +91,15 @@ public class ChatListAdapter extends BaseAdapter {
             holder = (ViewHolder)convertView.getTag();
         }
         holder.text.setText(mList.get(position).payload);
+	    String recipientId = mList.get(position).recipient;
+	    holder.userName.setText(mList.get(position).senderName);
+
         //Log.d("CustomAdapter", mList.get(position).payload);
         return convertView;
     }
 
     public static class ViewHolder {
+	    public TextView userName;
         public TextView text;
     }
 }

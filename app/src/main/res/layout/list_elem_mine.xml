@@ -3,20 +3,25 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent" android:layout_height="wrap_content">
 
-    <ImageView
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@mipmap/ic_launcher"
-        android:id="@+id/my_image_view"
-        android:layout_alignParentRight="true"/>
-
+        android:textStyle="bold"
+        android:id="@+id/text_user_name"
+        android:text="Paolino Paperino"
+        android:textColor="@color/chatUserNameGreen"
+        android:layout_alignParentRight="true"
+        style="@style/ConversationItem"/>
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/message_text"
         android:textColor="@color/wallet_primary_text_holo_light"
+        android:layout_below="@+id/text_user_name"
         android:text="prova"
-        android:layout_toLeftOf="@id/my_image_view"
+        android:layout_alignParentRight="true"
+        android:gravity="end"
+        style="@style/ConversationItem"
         />
 
 </RelativeLayout>
