@@ -6,52 +6,34 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Point;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutCompat;
 import android.support.v7.widget.Toolbar;
-import android.text.Editable;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.example.andrea.tabsactionbar.chat.ConversationActivity;
-import com.example.andrea.tabsactionbar.chat.messages.RegistrationRequest;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.nearby.messages.internal.MessageType;
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.text.Text;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 
@@ -61,7 +43,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     LocationListener listener;
     Marker userMarker;
     ArrayList<Marker> oilMarkers;
-	ArrayList<MarkerOptions> oilMarkersOptions;
     LocationManager locationManager;
     LatLng userLocation;
     private boolean bound;
@@ -76,7 +57,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         bound = false;
         focused = false;
         oilMarkers = new ArrayList<Marker>();
-	    oilMarkersOptions = new ArrayList<>();
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         setContentView(R.layout.activity_maps);
 	    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -101,34 +81,24 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-	    Log.d(TAG, "onMapReady");
-
         mMap = googleMap;
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
         listener = new LocationListener() {
-
-	        private final String TAG = "LocationListener";
-
             @Override
             public void onLocationChanged(Location location) {
-	            Log.d(TAG, "onLocationChanged");
-	            Log.d(TAG, "Location " + location.getLatitude() + " " + location.getLongitude());
                 userLocation = new LatLng(location.getLatitude(),location.getLongitude());
 	            /* Remove old user position marker before creating a new one */
-	            mMap.clear();
+	            if(userMarker != null) {
+                    userMarker.remove();
+                }
                 userMarker = mMap.addMarker(new MarkerOptions()
                         .position(userLocation)
                         .title("Marker in userLocation")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         .snippet("You are here"));
-
-	            /* Drawing oil station markers */
-	            for (MarkerOptions markerOptions : oilMarkersOptions) {
-		            mMap.addMarker(markerOptions);
-	            }
-
                 //  userMarker.setPosition(userLocation);
+
                 if(!focused) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
@@ -170,7 +140,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Log.i("MapsActivity","arrivati qui prima del bind");
                 bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
             } else {
-                Toast toast = Toast.makeText(this,"activate gps",Toast.LENGTH_SHORT);
+                Toast toast = Toast.makeText(this,"Activate gps",Toast.LENGTH_SHORT);
                 toast.show();
                 super.finish();
             }
@@ -178,12 +148,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
             public void onMapLongClick(LatLng latLng) {
-	            MarkerOptions markerOptions = new MarkerOptions()
-			            .position(latLng)
-			            .title("oilMarker"+oilMarkers.size())
-			            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
-	            oilMarkersOptions.add(markerOptions);
-                oilMarkers.add(mMap.addMarker(markerOptions));
+                oilMarkers.add(mMap.addMarker(new MarkerOptions()
+                        .position(latLng)
+                        .title("oilMarker"+oilMarkers.size())
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))));
                 getAndSendInfo(latLng.latitude,latLng.longitude,null);
             }
         });
@@ -214,7 +182,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     if(locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, listener);
                     } else {
-                        Toast toast = Toast.makeText(this,"activate gps",Toast.LENGTH_SHORT);
+                        Toast toast = Toast.makeText(this,"Activate gps",Toast.LENGTH_SHORT);
                         toast.show();
                         super.finish();
                     }
@@ -256,10 +224,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             mService = new Messenger(service);
             bound = true;
             registerMaps();
-            SearchOilRequest req = new SearchOilRequest(userLocation.latitude,userLocation.longitude);
-            Message msg = Message.obtain(null,MessageTypes.SEARCH_STATION_REQUEST);
             SharedPreferences prf = getSharedPreferences(SettingActivity.PREFERENCE_SETTING,MODE_APPEND);
-            Log.v(TAG,prf.getString(SettingActivity.DIST_KM_KEY,"7"));
+            double km = Double.parseDouble(prf.getString(SettingActivity.DIST_KM_KEY,"10"));
+            SearchOilRequest req = new SearchOilRequest(userLocation.latitude,userLocation.longitude,km);
+            Message msg = Message.obtain(null,MessageTypes.SEARCH_STATION_REQUEST);
+            Log.v(TAG,prf.getString(SettingActivity.DIST_KM_KEY,"10"));
             Log.v(TAG,prf.getString(SettingActivity.FUEL_KEY,"Oil"));
             msg.obj = req;
             try {
@@ -286,7 +255,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Log.i("MapsHandler","ricevuto ssr");
 
                     mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
-                        EditText txt1, txt2, txt3;
                         @Override
                         public void onInfoWindowClick(final Marker marker) {
                             getAndSendInfo(marker.getPosition().latitude,marker.getPosition().longitude,marker);
@@ -294,13 +262,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     });
 
                     for(int i = 0; i<sor.oils.size();i++){
-	                    MarkerOptions markerOptions = new MarkerOptions()
-			                    .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
-			                    .title("oilMarker"+i)
-			                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
-			                    .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl);
-	                    oilMarkersOptions.add(markerOptions);
-                        oilMarkers.add(mMap.addMarker(markerOptions));
+                        oilMarkers.add(mMap.addMarker(new MarkerOptions()
+                                .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
+                                .title("oilMarker"+i)
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                                .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl+" ")));
                     }
                     break;
                 default:
@@ -311,15 +277,21 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-    private double valueNotNull(EditText txt, Marker marker,int begin,int end){
+    private double valueNotNull(EditText txt, Marker marker,String ref){
         if(!txt.getText().toString().matches("") ){
             return Double.parseDouble(txt.getText().toString());
         } else if (marker == null) {
             return 0;
         } else {
+            Log.v(TAG,marker.getSnippet());
+            int begin = marker.getSnippet().indexOf(ref);
+            begin+=ref.length();
+            int end = marker.getSnippet().indexOf(" ",begin);
+            Log.v(TAG,"value: "+begin+" "+end);
             return Double.parseDouble(marker.getSnippet().substring(begin,end));
         }
     }
+
     private void getAndSendInfo (double latitude, double longitude,final Marker marker){
         final EditText txt1,txt2,txt3;
         final LinearLayout ll = (LinearLayout)findViewById(R.id.textLayout);
@@ -334,15 +306,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View view) {
                 double oil,diesel,gpl;
-                oil = valueNotNull(txt1, marker,5,10);
-                diesel = valueNotNull(txt2,marker,19,24);
-                gpl = valueNotNull(txt3,marker,30,35);
+                oil = valueNotNull(txt1, marker,"Oil: ");
+                diesel = valueNotNull(txt2,marker,"Diesel: ");
+                gpl = valueNotNull(txt3,marker,"Gpl: ");
                 if (oil == 0 && diesel == 0 && gpl == 0){
                     Toast toast = Toast.makeText(getApplicationContext(),"all fields are zero, creation failed",Toast.LENGTH_SHORT);
                     toast.show();
                     ll.setVisibility(View.GONE);
                     return;
                 }
+                txt1.setText("");
+                txt2.setText("");
+                txt3.setText("");
                 ModifyRequest mreq = new ModifyRequest(lat,lon,oil,diesel,gpl);
                 Message msg = Message.obtain(null, MessageTypes.MODIFY_REQUEST);
                 msg.obj = mreq;

@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,6 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -49,7 +51,7 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         bound = false;
-        oilMarkers = new ArrayList<Marker>();
+        oilMarkers = new ArrayList<>();
         setContentView(R.layout.activity_maps);
 	    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -170,7 +172,6 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                     CommuteRequest creq = (CommuteRequest) msg.obj;
                     if(creq.latWork == null && creq.longWork == null && creq.latHome == null && creq.longHome == null){
                         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
-                            Marker home, work = null;
                             @Override
                             public void onMapLongClick(LatLng latLng) {
                                 if (home == null){
@@ -194,15 +195,19 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                                 }
                             }
                         });
+                        Toast toast = Toast.makeText(getApplicationContext(),"Long click to set Home and Work positions",Toast.LENGTH_SHORT);
+                        toast.show();
                     } else {
-                        home = mMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(creq.latHome,creq.longHome))
-                                .title("Home")
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                        work = mMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(creq.latWork,creq.longWork))
-                                .title("Work")
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                        if (home == null && work == null) {
+                            home = mMap.addMarker(new MarkerOptions()
+                                    .position(new LatLng(creq.latHome, creq.longHome))
+                                    .title("Home")
+                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                            work = mMap.addMarker(new MarkerOptions()
+                                    .position(new LatLng(creq.latWork, creq.longWork))
+                                    .title("Work")
+                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                        }
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(home.getPosition()));
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home.getPosition(),8));
                     }
@@ -214,21 +219,47 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                             .width(15)
                             .color(Color.RED)
                     );
+                    double min = 100;
+                    int index = 0;
+                    SharedPreferences prf = getSharedPreferences(SettingActivity.PREFERENCE_SETTING,MODE_APPEND);
+                    String str = "oil";
                     for(int i = 0; i < sor.oils.size(); i++){
                         double lat1 = sor.oils.get(i).latitude;
                         double lng1 = sor.oils.get(i).longitude;
                         for (int j = 0; j < points.size(); j++){
                             double lat2 = points.get(j).latitude;
                             double lng2 = points.get(j).longitude;
-                            if (measure(lat1,lng1,lat2,lng2) < 2){
+                            if (measure(lat1,lng1,lat2,lng2) < 4){
+                                switch(prf.getString(SettingActivity.FUEL_KEY,"1")){
+                                    case "1":
+                                        if (sor.oils.get(i).oil != 0 && sor.oils.get(i).oil < min){
+                                            min = sor.oils.get(i).oil;
+                                            index++;
+                                        }
+                                        break;
+                                    case "2":
+                                        if (sor.oils.get(i).diesel != 0 && sor.oils.get(i).diesel < min){
+                                            min = sor.oils.get(i).diesel;
+                                            index++;
+                                        }
+                                        break;
+                                    case "3":
+                                        if (sor.oils.get(i).gpl != 0 && sor.oils.get(i).gpl < min){
+                                            min = sor.oils.get(i).gpl;
+                                            index++;
+                                        }
+                                }
                                 oilMarkers.add(mMap.addMarker(new MarkerOptions()
                                         .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
                                         .title("oilMarker"+i)
                                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
-                                        .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl)));
+                                        .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl+" ")));
                                 break;
                             }
                         }
+                    }
+                    if(index > 0) {
+                        oilMarkers.get(index - 1).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
                     }
                     break;
                 default:

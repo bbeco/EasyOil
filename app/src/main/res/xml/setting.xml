@@ -35,14 +35,14 @@
         android:entryValues="@array/itemList"
         android:key="dist_pref"
         android:defaultValue="10"
-        android:title="distance coverage km" />
+        android:title="Distance coverage km" />
 
     <ListPreference
         android:entries="@array/fuelPref"
         android:entryValues="@array/fuelPrefValue"
         android:key="fuel_pref"
         android:defaultValue="1"
-        android:title="fuel preference"/>
+        android:title="Fuel preference"/>
 
 
     <CheckBoxPreference
