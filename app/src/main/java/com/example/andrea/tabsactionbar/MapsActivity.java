@@ -303,6 +303,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         oilMarkers.add(mMap.addMarker(markerOptions));
                     }
                     break;
+
+	            case SampleService.ERROR_MESSAGE:
+		            Log.e(TAG, (String)msg.obj);
+		            Toast toast = Toast.makeText(getApplicationContext(),"Server unavailable. Retry later",Toast.LENGTH_SHORT);
+		            toast.show();
+		            break;
+
                 default:
                     Log.w(TAG, "Received an unknown task message");
                     super.handleMessage(msg);

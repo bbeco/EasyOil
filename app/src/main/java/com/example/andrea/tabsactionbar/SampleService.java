@@ -262,6 +262,8 @@ public class SampleService extends IntentService {
     public static final int CLIENT_UNREGISTRATION = -3;
 	/** Message code to clear the conversation cache */
 	public static final int CLEAR_CONVERSATION_CACHE = -4;
+	/** Message code for errors */
+	public static final int ERROR_MESSAGE = -5;
 
 	/*
 	 *This is sent back to the activity by the service so that the activity can upate the message
@@ -351,6 +353,7 @@ public class SampleService extends IntentService {
                     try {
 	                    if (socket == null) {
 		                    Log.e(TAG, "SearchStation failed with null socket");
+		                    sendErrorMessage("Could not retrieve station list");
 		                    break;
 	                    }
                         out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
@@ -365,6 +368,11 @@ public class SampleService extends IntentService {
                     break;
                 case MessageTypes.MODIFY_REQUEST:
                     try {
+	                    if (socket == null) {
+		                    Log.e(TAG, "ModifyRequest failed with null socket");
+		                    sendErrorMessage("Could not modify request");
+		                    break;
+	                    }
                         out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
                         ModifyRequest mreq = (ModifyRequest) msg.obj;
                         String jsonMreq = mreq.toJSONString();
@@ -381,7 +389,8 @@ public class SampleService extends IntentService {
 		                } catch (IOException ioe) {
 			                Log.e(TAG, "Cannot create socket");
 			                ioe.printStackTrace();
-			                return;
+			                sendErrorMessage("Unable to connect to server");
+			                break;
 		                }
 	                }
                     try {
@@ -404,6 +413,11 @@ public class SampleService extends IntentService {
                         URL url = new URL("https://maps.googleapis.com/maps/api/directions/json?"+pathReq);
                         Log.i(TAG,pathReq);
                         urlConn = (HttpURLConnection) url.openConnection();
+	                    if (urlConn == null) {
+		                    Log.e(TAG, "Unable to open connection toward Google Map service");
+		                    sendErrorMessage("Unable to connect to Google Map Service");
+		                    break;
+	                    }
                         BufferedReader in = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
 
                         StringBuilder builder = new StringBuilder();
@@ -434,13 +448,16 @@ public class SampleService extends IntentService {
                     } catch (RemoteException | JSONException | IOException e) {
                         e.printStackTrace();
                     } finally {
-                        urlConn.disconnect();
+	                    if (urlConn != null) {
+		                    urlConn.disconnect();
+	                    }
                     }
                     break;
                 /* Sending a new chat message (and storing it in the local db) */
                 case MessageTypes.CHAT_MESSAGE:
 	                Log.i(TAG, "received chat message");
 	                if (socket == null) {
+		                sendErrorMessage("Unable to connect to chat server");
 		                Log.e(TAG, "socket is null");
 	                }
 	                try {
@@ -789,11 +806,12 @@ public class SampleService extends IntentService {
 				socket = new Socket(HOST, PORT);
 			} catch (IOException ioe) {
 				Log.e(TAG, "Cannot create socket");
+				sendErrorMessage("Unable to connect to chat server");
 				ioe.printStackTrace();
 				return;
 			}
 			try {
-                            /* this should not be needed because of the listening thread */
+                /* this should not be needed because of the listening thread */
 				//in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 				out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
 			} catch (IOException ioe) {
@@ -811,7 +829,7 @@ public class SampleService extends IntentService {
 			}
 			mListener.start();
 
-                        /* Sending registration */
+            /* Sending registration */
 			RegistrationRequest registrationRequest = new RegistrationRequest(userEmail, userFullName, lastMessageTs);
 			try {
 				String json;
@@ -824,6 +842,26 @@ public class SampleService extends IntentService {
 				Log.e(TAG, "unable to send message");
 				e.printStackTrace();
 			}
+		}
+	}
+
+	/**
+	 * Send a message to the activity. The provided error string is put in the message's obj
+	 * attribute.
+	 * @param errorString A string describing the error that occurred.
+	 */
+	private void sendErrorMessage(String errorString) {
+		if (!bound || boundActivityMessenger == null) {
+			Log.e(TAG, "No activity is currently bound");
+			return;
+		}
+		Message errorMsg = Message.obtain(null, ERROR_MESSAGE);
+		errorMsg.obj = errorString;
+		try {
+			boundActivityMessenger.send(errorMsg);
+		} catch (RemoteException re) {
+			Log.e(TAG, "Unable to send error message");
+			re.printStackTrace();
 		}
 	}
 }
