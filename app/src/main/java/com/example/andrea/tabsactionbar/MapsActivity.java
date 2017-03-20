@@ -50,12 +50,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Messenger mService;
     private Messenger mMessenger = new Messenger(new IncomingHandler());
     boolean focused;
+    boolean bindingCalled;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         bound = false;
         focused = false;
+        bindingCalled = false;
         oilMarkers = new ArrayList<Marker>();
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         setContentView(R.layout.activity_maps);
@@ -98,12 +100,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         .snippet("You are here"));
                 //  userMarker.setPosition(userLocation);
-
+                Log.v(TAG,"On location changed called");
+                if(!bindingCalled){
+                    Intent s = new Intent(getApplicationContext(), SampleService.class);
+                    Log.i("MapsActivity","arrivati qui prima del bind");
+                    bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
+                }
                 if(!focused) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
                     focused = true;
                 }
+
             }
 
             @Override
@@ -136,9 +144,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 userMarker.setPosition(userLocation);
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
-                Intent s = new Intent(this, SampleService.class);
-                Log.i("MapsActivity","arrivati qui prima del bind");
-                bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
             } else {
                 Toast toast = Toast.makeText(this,"Activate gps",Toast.LENGTH_SHORT);
                 toast.show();
