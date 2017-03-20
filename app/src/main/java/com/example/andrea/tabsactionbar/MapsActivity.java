@@ -274,6 +274,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl+" ")));
                     }
                     break;
+
+	            case SampleService.ERROR_MESSAGE:
+		            Log.e(TAG, (String)msg.obj);
+		            Toast toast = Toast.makeText(getApplicationContext(),"Server unavailable. Retry later",Toast.LENGTH_SHORT);
+		            toast.show();
+		            break;
+
                 default:
                     Log.w(TAG, "Received an unknown task message");
                     super.handleMessage(msg);

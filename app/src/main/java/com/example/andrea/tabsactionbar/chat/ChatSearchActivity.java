@@ -27,6 +27,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.andrea.tabsactionbar.MessageTypes;
 import com.example.andrea.tabsactionbar.R;
@@ -140,6 +141,12 @@ public class ChatSearchActivity extends AppCompatActivity {
 
 				case MessageTypes.SEARCH_USER_RESPONSE:
 					updateSearchResults((SearchUserResponse)msg.obj);
+					break;
+
+				case SampleService.ERROR_MESSAGE:
+					Log.e(TAG, (String)msg.obj);
+					Toast toast = Toast.makeText(getApplicationContext(),"Server unavailable. Retry later",Toast.LENGTH_SHORT);
+					toast.show();
 					break;
 
 				default:

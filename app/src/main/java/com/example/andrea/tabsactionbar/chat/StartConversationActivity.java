@@ -29,6 +29,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.andrea.tabsactionbar.MessageTypes;
 import com.example.andrea.tabsactionbar.SampleService;
@@ -180,6 +181,12 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 		            conversationList.clear();
 		            updateConversationList();
 		            conversationListAdapter.notifyDataSetChanged();
+		            break;
+
+	            case SampleService.ERROR_MESSAGE:
+		            Log.e(TAG, (String)msg.obj);
+		            Toast toast = Toast.makeText(getApplicationContext(),"Server unavailable. Retry later",Toast.LENGTH_SHORT);
+		            toast.show();
 		            break;
 
                 default:
