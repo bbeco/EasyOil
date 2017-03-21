@@ -260,6 +260,7 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                     }
                     if(index > 0) {
                         oilMarkers.get(index - 1).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+                        oilMarkers.get(index-1).setZIndex(2f);
                     }
                     break;
                 default:

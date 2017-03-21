@@ -144,6 +144,8 @@ public class SettingActivity extends PreferenceActivity implements SharedPrefere
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
+                    Toast toast = Toast.makeText(getApplicationContext(),"Home/Work positions deleted",Toast.LENGTH_SHORT);
+                    toast.show();
                     return true;
                 }
 
