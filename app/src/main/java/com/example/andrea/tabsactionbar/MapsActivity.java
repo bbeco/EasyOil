@@ -105,6 +105,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Intent s = new Intent(getApplicationContext(), SampleService.class);
                     Log.i("MapsActivity","arrivati qui prima del bind");
                     bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
+                    bindingCalled = true;
                 }
                 if(!focused) {
                     mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
@@ -131,19 +132,25 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         } else {
             if(locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, listener);
-                if(locationManager.getLastKnownLocation((LocationManager.NETWORK_PROVIDER))== null) {
-                    userLocation = new LatLng(0,0);
-                } else {
+                if(locationManager.getLastKnownLocation((LocationManager.NETWORK_PROVIDER))!= null) {
                     userLocation = new LatLng(locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER).getLatitude(), locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER).getLongitude());
+                    Log.v(TAG,"get last known location");
+                    if(!bindingCalled){
+                        Intent s = new Intent(getApplicationContext(), SampleService.class);
+                        Log.i("MapsActivity","arrivati qui prima del bind");
+                        bindService(s, mServiceConnection, Context.BIND_AUTO_CREATE);
+                        bindingCalled = true;
+                    }
+                    userMarker = mMap.addMarker(new MarkerOptions()
+                            .position(userLocation)
+                            .title("Marker in userLocation")
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                            .snippet("You are here"));
+                    userMarker.setPosition(userLocation);
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
                 }
-                userMarker = mMap.addMarker(new MarkerOptions()
-                        .position(userLocation)
-                        .title("Marker in userLocation")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-                        .snippet("You are here"));
-                userMarker.setPosition(userLocation);
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
+
             } else {
                 Toast toast = Toast.makeText(this,"Activate gps",Toast.LENGTH_SHORT);
                 toast.show();
