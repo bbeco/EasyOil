@@ -162,9 +162,17 @@ public class ChatSearchActivity extends AppCompatActivity {
 	 */
 	private void updateSearchResults(SearchUserResponse resp) {
 		ListView listView = (ListView)findViewById(R.id.chat_search_list);
+		TextView noResultText = (TextView)findViewById(R.id.text_no_results);
 		ArrayList<SearchUserResponse.User> result = resp.names;
-		SearchResultAdapter adapter = new SearchResultAdapter(this, result);
-		listView.setAdapter(adapter);
+		if (result.size() > 0) {
+			listView.setVisibility(View.VISIBLE);
+			noResultText.setVisibility(View.GONE);
+			SearchResultAdapter adapter = new SearchResultAdapter(this, result);
+			listView.setAdapter(adapter);
+		} else {
+			listView.setVisibility(View.GONE);
+			noResultText.setVisibility(View.VISIBLE);
+		}
 	}
 
 	public void onCreate(Bundle savedInstanceState) {
