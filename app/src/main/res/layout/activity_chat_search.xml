@@ -7,10 +7,20 @@
 
     <include
         layout="@layout/toolbar" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:id="@+id/text_no_results"
+        style="@style/noResultText"
+        android:text="@string/no_user_result"/>
+
     <ListView
         android:id="@+id/chat_search_list"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:visibility="visible">
     </ListView>
 
 </LinearLayout>

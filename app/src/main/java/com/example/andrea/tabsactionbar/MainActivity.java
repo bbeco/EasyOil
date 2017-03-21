@@ -1,7 +1,6 @@
 package com.example.andrea.tabsactionbar;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -9,24 +8,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.example.andrea.tabsactionbar.chat.ConversationActivity;
 import com.example.andrea.tabsactionbar.chat.StartConversationActivity;
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
-import com.facebook.GraphRequest;
-import com.facebook.GraphResponse;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 
-import layout.Nearby;
-
-public class MainActivity extends AppCompatActivity implements Nearby.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity {
     private final static String TAG = "MainActivity";
 
 
@@ -125,9 +117,4 @@ public class MainActivity extends AppCompatActivity implements Nearby.OnFragment
         super.onActivityResult(requestCode, resultCode, data);
         callbackManager.onActivityResult(requestCode, resultCode, data);
     }
-
-	@Override
-	public void onFragmentInteraction(Uri uri) {
-
-	}
 }

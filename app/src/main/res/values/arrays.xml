@@ -10,7 +10,7 @@
     <string-array name="fuelPref">
         <item>Oil</item>
         <item>Diesel</item>
-        <item>Gpl</item>
+        <item>LPG</item>
     </string-array>
     <string-array name="fuelPrefValue">
         <item>1</item>

@@ -510,7 +510,7 @@ public class SampleService extends IntentService {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.136";
+    private static final String HOST = "192.168.1.3";
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
