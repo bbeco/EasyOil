@@ -262,6 +262,12 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                         oilMarkers.get(index - 1).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
                     }
                     break;
+
+	            case SampleService.ERROR_MESSAGE:
+		            Toast toast = Toast.makeText(getApplicationContext(),"Check your internet connection",Toast.LENGTH_SHORT);
+		            toast.show();
+	            	break;
+
                 default:
                     Log.w(TAG, "Received an unknown task message");
                     super.handleMessage(msg);

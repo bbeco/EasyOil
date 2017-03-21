@@ -308,7 +308,11 @@ public class SampleService extends IntentService {
 		                conversationRecipient = (String)msg.obj;
 	                }
 
-	                getFBElements();
+	                if(!getFBElements() || userEmail == null || userFullName == null) {
+		                Log.e(TAG, "Unable to fetch infos from fb");
+		                sendErrorMessage("Unable to retrieve user information from facebook");
+		                break;
+	                }
 
 	                if (boundActivityCode == SETTING_ACTIVITY) {
 		                break;
@@ -565,32 +569,44 @@ public class SampleService extends IntentService {
 		Log.d(TAG, "username: " + userFullName + " useremail: " + userEmail);
 		Log.d(TAG, "Looking for new messages");
 		if (!bound) {
-			getFBElements();
-			if (userFullName != null && userEmail != null) {
+			if (getFBElements() && userFullName != null && userEmail != null) {
 				checkUnreadMessages();
 			}
 		}
 		AlarmReceiver.completeWakefulIntent(intent);
 	}
 
-	private void getFBElements() {
+	/**
+	 * Retrieve user information from facebook.
+	 *
+	 * Since the information retrieval is performed in another function, we still have to check
+	 * whether userFullName or userEmail are null.
+	 *
+	 * @return true if everything was ok, false otherwise.
+	 */
+	private boolean getFBElements() {
 		AccessToken accessToken = AccessToken.getCurrentAccessToken();
 		if (accessToken == null || accessToken.isExpired()) {
 			Log.d(TAG, "FB AccessToken is either null or expired");
-			return;
+			sendErrorMessage("FB AccessToken is either null or expired");
+			return false;
 		}
 		GraphRequest request = GraphRequest.newMeRequest(
 				accessToken,
 				new GraphRequest.GraphJSONObjectCallback() {
 					@Override
 					public void onCompleted(JSONObject object, GraphResponse response) {
+						if (object == null) {
+							Log.e(TAG, "Unable to retrieve information from fb");
+							sendErrorMessage("Unable to retrieve information from fb");
+							return;
+						}
 						try {
 							userFullName = object.getString("name");
 							userEmail = object.getString("email");
 						} catch (JSONException e) {
 							e.printStackTrace();
 						}
-						Log.d(TAG, "user");
 					}
 				});
 		Bundle parameters = new Bundle();
@@ -598,6 +614,7 @@ public class SampleService extends IntentService {
 		request.setParameters(parameters);
 		Log.i(TAG, "Requesting fb credentials");
 		request.executeAndWait();
+		return true;
 	}
 
 	@Override

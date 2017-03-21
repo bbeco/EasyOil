@@ -215,6 +215,12 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 			    new GraphRequest.GraphJSONObjectCallback() {
 				    @Override
 				    public void onCompleted(JSONObject object, GraphResponse response) {
+					    if (object == null) {
+						    Log.e(TAG, "Could not retrieve information from fb");
+						    Toast toast = Toast.makeText(getApplicationContext(),"Check your internet connection",Toast.LENGTH_SHORT);
+						    toast.show();
+						    return;
+					    }
 					    try {
 						    userFullName = object.getString("name");
 						    userEmail = object.getString("email");
