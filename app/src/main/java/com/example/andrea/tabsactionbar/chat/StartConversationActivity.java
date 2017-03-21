@@ -218,9 +218,16 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 					    try {
 						    userFullName = object.getString("name");
 						    userEmail = object.getString("email");
-						    updateConversationList();
 						    ListView listView = (ListView) findViewById(R.id.conversation_list);
-						    listView.setAdapter(conversationListAdapter);
+						    TextView noResultsText = (TextView) findViewById(R.id.text_no_results);
+						    if (updateConversationList() > 0) {
+							    noResultsText.setVisibility(View.GONE);
+							    listView.setVisibility(View.VISIBLE);
+							    listView.setAdapter(conversationListAdapter);
+						    } else {
+							    noResultsText.setVisibility(View.VISIBLE);
+							    listView.setVisibility(View.GONE);
+						    }
 					    } catch (JSONException e) {
 						    e.printStackTrace();
 					    }
@@ -267,9 +274,10 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 
 	/**
 	 * This method updated the conversationList when it is created at start and when a new message
-	 * arrives
+	 * arrives.
+	 * @return the number of conversations found or -1 if some error occurred.
 	 */
-	private void updateConversationList() {
+	private int updateConversationList() {
 		/* Retriving the list of old conversations and populating the list view */
 		ConversationsDbHelper mDbHelper = new ConversationsDbHelper(this);
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
@@ -283,7 +291,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 			if (conversationColumnIndex == -1 || conversationTitleColumnIndex == -1 ||
 					ownerColumnIndex == -1 || payloadColumnIndex == -1 ) {
 				Log.e(TAG, "error while reading local conversation db");
-				break;
+				return -1;
 			}
 			String lastMessageOwner = cursor.getString(ownerColumnIndex);
 			String conversation = cursor.getString(conversationColumnIndex);
@@ -294,6 +302,7 @@ public class StartConversationActivity extends AppCompatActivity implements Sear
 		}
 		cursor.close();
 		Log.i(TAG, Integer.toString(conversationList.size()) + " conversations found");
+		return conversationList.size();
 	}
 
 	/**

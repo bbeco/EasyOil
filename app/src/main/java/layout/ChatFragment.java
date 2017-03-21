@@ -68,7 +68,7 @@ public class ChatFragment extends Fragment {
         ViewGroup chat_container = (ViewGroup) fragmentView.findViewById(R.id.chat_container);
         if (true) { //TODO add check for old conversation
             TextView text = new TextView(getContext());
-            text.setText(R.string.no_conversation);
+            text.setText(R.string.no_conversations);
             LinearLayout.LayoutParams textLayout = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);
             textLayout.gravity = Gravity.CENTER_HORIZONTAL;
