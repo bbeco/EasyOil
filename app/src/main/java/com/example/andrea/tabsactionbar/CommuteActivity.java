@@ -222,7 +222,6 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                     double min = 100;
                     int index = 0;
                     SharedPreferences prf = getSharedPreferences(SettingActivity.PREFERENCE_SETTING,MODE_APPEND);
-                    String str = "oil";
                     for(int i = 0; i < sor.oils.size(); i++){
                         double lat1 = sor.oils.get(i).latitude;
                         double lng1 = sor.oils.get(i).longitude;
@@ -235,23 +234,26 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                                         if (sor.oils.get(i).oil != 0 && sor.oils.get(i).oil < min){
                                             min = sor.oils.get(i).oil;
                                             index++;
+	                                        Log.d(TAG,"Oil "+index);
                                         }
                                         break;
                                     case "2":
                                         if (sor.oils.get(i).diesel != 0 && sor.oils.get(i).diesel < min){
                                             min = sor.oils.get(i).diesel;
                                             index++;
+	                                        Log.d(TAG,"Diesel "+index);
                                         }
                                         break;
                                     case "3":
                                         if (sor.oils.get(i).gpl != 0 && sor.oils.get(i).gpl < min){
                                             min = sor.oils.get(i).gpl;
                                             index++;
+	                                        Log.d(TAG,"Gpl "+index);
                                         }
                                 }
                                 oilMarkers.add(mMap.addMarker(new MarkerOptions()
                                         .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
-                                        .title("oilMarker"+i)
+                                        .title("oilMarker"+sor.oils.get(i).id)
                                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
                                         .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl+" ")));
                                 break;

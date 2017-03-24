@@ -96,9 +96,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
                 userMarker = mMap.addMarker(new MarkerOptions()
                         .position(userLocation)
-                        .title("Marker in userLocation")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-                        .snippet("You are here"));
+                        .title("You are here")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
                 //  userMarker.setPosition(userLocation);
                 Log.v(TAG,"On location changed called");
                 if(!bindingCalled){
@@ -274,9 +273,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     });
 
                     for(int i = 0; i<sor.oils.size();i++){
+	                    Log.d(TAG, "Ricevuto: " + sor.oils.get(i).latitude + " " + sor.oils.get(i).longitude + " " + sor.oils.get(i).oil+ " " + sor.oils.get(i).diesel+ " " + sor.oils.get(i).gpl);
                         oilMarkers.add(mMap.addMarker(new MarkerOptions()
                                 .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
-                                .title("oilMarker"+i)
+                                .title("oilMarker"+sor.oils.get(i).id)
                                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
                                 .snippet("Oil: "+sor.oils.get(i).oil+" Diesel: "+sor.oils.get(i).diesel+" Gpl: "+sor.oils.get(i).gpl+" ")));
                     }
@@ -337,12 +337,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 txt1.setText("");
                 txt2.setText("");
                 txt3.setText("");
-                ModifyRequest mreq = new ModifyRequest(lat,lon,oil,diesel,gpl);
+	            ModifyRequest mreq;
+	            if (marker == null) {
+		            mreq = new ModifyRequest(-1, lat, lon, oil, diesel, gpl);
+	            } else {
+		            String id = marker.getTitle().substring(9);
+		            Log.d(TAG, "Id: " + id);
+		            mreq = new ModifyRequest(Integer.parseInt(id), lat, lon, oil, diesel, gpl);
+	            }
                 Message msg = Message.obtain(null, MessageTypes.MODIFY_REQUEST);
                 msg.obj = mreq;
                 ll.setVisibility(View.GONE);
                 try {
-                    mService.send(msg);
+                    mService.send(msg); //FIXME questo da null (forse dopo che si è bloccato lo schermo)
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }
