@@ -74,11 +74,13 @@
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps"
+            android:screenOrientation="portrait"
             android:parentActivityName=".MainActivity"/>
 
         <activity
             android:name=".CommuteActivity"
             android:label="Commute"
+            android:screenOrientation="portrait"
             android:parentActivityName=".MainActivity"/>
 
         <activity

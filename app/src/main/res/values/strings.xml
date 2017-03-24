@@ -26,4 +26,5 @@
     <string name="clear_conversations_cache">Clear conversations cache</string>
     <string name="start_conversation_title">Conversations</string>
     <string name="no_user_result">No user found</string>
+    <string name="action_change_server_address">Change server IP</string>
 </resources>

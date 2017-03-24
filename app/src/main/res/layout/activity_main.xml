@@ -2,67 +2,77 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
     android:layout_centerHorizontal="true"
-    android:id="@+id/container"
     android:layout_centerInParent="true">
 
-    <Button
-        android:id="@+id/btn_chat"
-        style="@style/DashboardButton"
-        android:drawableTop="@drawable/ic_chat_black_24dp"
-        android:text="Chat"/>
+    <include
+        layout="@layout/toolbar" />
 
-    <Button
-        android:id="@+id/btn_setting"
-        style="@style/DashboardButton"
-        android:drawableTop="@drawable/ic_setting_light"
-        android:text="Setting"
-        android:layout_alignTop="@+id/btn_map"
-        android:layout_alignLeft="@+id/btn_commute"
-        android:layout_alignStart="@+id/btn_commute" />
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_centerHorizontal="true"
+                    android:id="@+id/container"
+                    android:layout_centerInParent="true">
 
-    <Button
-        android:id="@+id/btn_map"
-        style="@style/DashboardButton"
-        android:drawableTop="@drawable/ic_map_black_24dp"
-        android:text="Map"
-        android:layout_gravity="bottom"
-        android:layout_below="@+id/btn_chat"
-        android:layout_alignLeft="@+id/btn_chat"
-        android:layout_alignStart="@+id/btn_chat"
-        android:layout_marginTop="41dp" />
+        <Button
+            android:id="@+id/btn_chat"
+            style="@style/DashboardButton"
+            android:drawableTop="@drawable/ic_chat_black_24dp"
+            android:text="Chat"/>
 
-    <Button
-        android:id="@+id/btn_commute"
-        style="@style/DashboardButton"
-        android:drawableTop="@drawable/ic_business_black_24dp"
-        android:text="Commute"
-        android:layout_above="@+id/btn_map"
-        android:layout_toRightOf="@+id/btn_chat"
-        android:layout_toEndOf="@+id/btn_chat"
-        android:layout_marginLeft="46dp"
-        android:layout_marginStart="46dp" />
-    <ProgressBar
-        android:id="@+id/login_progress1"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:visibility="gone" />
+        <Button
+            android:id="@+id/btn_setting"
+            style="@style/DashboardButton"
+            android:drawableTop="@drawable/ic_setting_light"
+            android:text="Setting"
+            android:layout_alignTop="@+id/btn_map"
+            android:layout_alignLeft="@+id/btn_commute"
+            android:layout_alignStart="@+id/btn_commute" />
 
-    <com.facebook.login.widget.LoginButton
-        android:id="@+id/login_button1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="41dp"
-        android:layout_below="@+id/btn_setting"
-        android:layout_alignLeft="@+id/btn_map"
-        android:layout_alignStart="@+id/btn_map"
-        android:layout_marginLeft="44dp"
-        android:layout_marginStart="44dp" />
+        <Button
+            android:id="@+id/btn_map"
+            style="@style/DashboardButton"
+            android:drawableTop="@drawable/ic_map_black_24dp"
+            android:text="Map"
+            android:layout_gravity="bottom"
+            android:layout_below="@+id/btn_chat"
+            android:layout_alignLeft="@+id/btn_chat"
+            android:layout_alignStart="@+id/btn_chat"
+            android:layout_marginTop="41dp" />
 
+        <Button
+            android:id="@+id/btn_commute"
+            style="@style/DashboardButton"
+            android:drawableTop="@drawable/ic_business_black_24dp"
+            android:text="Commute"
+            android:layout_above="@+id/btn_map"
+            android:layout_toRightOf="@+id/btn_chat"
+            android:layout_toEndOf="@+id/btn_chat"
+            android:layout_marginLeft="46dp"
+            android:layout_marginStart="46dp" />
+        <ProgressBar
+            android:id="@+id/login_progress1"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
+        <com.facebook.login.widget.LoginButton
+            android:id="@+id/login_button1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="41dp"
+            android:layout_below="@+id/btn_setting"
+            android:layout_alignLeft="@+id/btn_map"
+            android:layout_alignStart="@+id/btn_map"
+            android:layout_marginLeft="44dp"
+            android:layout_marginStart="44dp" />
+
+
+    </RelativeLayout>
 
 </RelativeLayout>
-
