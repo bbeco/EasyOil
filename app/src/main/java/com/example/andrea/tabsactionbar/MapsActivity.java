@@ -55,6 +55,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+	    Log.d(TAG, "onCreate");
         bound = false;
         focused = false;
         bindingCalled = false;
@@ -83,6 +84,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+	    Log.d(TAG, "onMapReady");
         mMap = googleMap;
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
@@ -169,14 +171,26 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
     @Override
     public void onPause (){
-        Log.i("MapsActivity", "onPause");
+        Log.d(TAG, "onPause");
         if (bound) {
             unregisterMaps();
             unbindService(mServiceConnection);
         }
         mService = null;
 	    bound = false;
+	    bindingCalled = false;
         super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+	    Log.d(TAG, "onResume");
+	    if (!bindingCalled) {
+		    Intent service = new Intent(this, SampleService.class);
+		    bindService(service, mServiceConnection, BIND_AUTO_CREATE);
+		    bindingCalled = true;
+	    }
+	    super.onResume();
     }
 
     @Override
@@ -221,7 +235,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Message unregistration = Message.obtain(null, SampleService.CLIENT_UNREGISTRATION);
         unregistration.arg1 = SampleService.MAPS_ACTIVITY;
         unregistration.replyTo = mMessenger;
-
         try {
             mService.send(unregistration);
         } catch (RemoteException re) {
@@ -254,6 +267,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             Log.i(TAG, "Unbound");
             mService = null;
             bound = false;
+	        bindingCalled = false;
         }
     };
 
@@ -263,7 +277,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             switch (msg.what) {
                 case MessageTypes.SEARCH_STATION_RESPONSE:
                     SearchOilResponse sor = (SearchOilResponse) msg.obj;
-                    Log.i("MapsHandler","ricevuto ssr");
+                    //Log.i("MapsHandler","ricevuto ssr");
 
                     mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
                         @Override
@@ -273,7 +287,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     });
 
                     for(int i = 0; i<sor.oils.size();i++){
-	                    Log.d(TAG, "Ricevuto: " + sor.oils.get(i).latitude + " " + sor.oils.get(i).longitude + " " + sor.oils.get(i).oil+ " " + sor.oils.get(i).diesel+ " " + sor.oils.get(i).gpl);
+	                    //Log.d(TAG, "Ricevuto: " + sor.oils.get(i).latitude + " " + sor.oils.get(i).longitude + " " + sor.oils.get(i).oil+ " " + sor.oils.get(i).diesel+ " " + sor.oils.get(i).gpl);
                         oilMarkers.add(mMap.addMarker(new MarkerOptions()
                                 .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
                                 .title("oilMarker"+sor.oils.get(i).id)
@@ -342,7 +356,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 		            mreq = new ModifyRequest(-1, lat, lon, oil, diesel, gpl);
 	            } else {
 		            String id = marker.getTitle().substring(9);
-		            Log.d(TAG, "Id: " + id);
+		            //Log.d(TAG, "Id: " + id);
 		            mreq = new ModifyRequest(Integer.parseInt(id), lat, lon, oil, diesel, gpl);
 	            }
                 Message msg = Message.obtain(null, MessageTypes.MODIFY_REQUEST);
