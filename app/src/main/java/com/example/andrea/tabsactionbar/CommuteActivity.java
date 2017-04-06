@@ -220,7 +220,8 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                             .color(Color.RED)
                     );
                     double min = 100;
-                    int index = 0;
+                    int index = -1;
+                    int counter = 0;
                     SharedPreferences prf = getSharedPreferences(SettingActivity.PREFERENCE_SETTING,MODE_APPEND);
                     for(int i = 0; i < sor.oils.size(); i++){
                         double lat1 = sor.oils.get(i).latitude;
@@ -233,24 +234,25 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                                     case "1":
                                         if (sor.oils.get(i).oil != 0 && sor.oils.get(i).oil < min){
                                             min = sor.oils.get(i).oil;
-                                            index++;
+                                            index = counter;
 	                                        Log.d(TAG,"Oil "+index);
                                         }
                                         break;
                                     case "2":
                                         if (sor.oils.get(i).diesel != 0 && sor.oils.get(i).diesel < min){
                                             min = sor.oils.get(i).diesel;
-                                            index++;
+                                            index = counter;
 	                                        Log.d(TAG,"Diesel "+index);
                                         }
                                         break;
                                     case "3":
                                         if (sor.oils.get(i).gpl != 0 && sor.oils.get(i).gpl < min){
                                             min = sor.oils.get(i).gpl;
-                                            index++;
+                                            index = counter;
 	                                        Log.d(TAG,"Gpl "+index);
                                         }
                                 }
+                                counter++;
                                 oilMarkers.add(mMap.addMarker(new MarkerOptions()
                                         .position(new LatLng(sor.oils.get(i).latitude,sor.oils.get(i).longitude))
                                         .title("oilMarker"+sor.oils.get(i).id)
@@ -260,9 +262,9 @@ public class CommuteActivity extends AppCompatActivity implements OnMapReadyCall
                             }
                         }
                     }
-                    if(index > 0) {
-                        oilMarkers.get(index - 1).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
-                        oilMarkers.get(index-1).setZIndex(2f);
+                    if(index >= 0) {
+                        oilMarkers.get(index).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+                        oilMarkers.get(index).setZIndex(2f);
                     }
                     break;
 
