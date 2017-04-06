@@ -389,7 +389,7 @@ public class SampleService extends IntentService {
                 case MessageTypes.COMMUTE_REQUEST:
                 	if (socket == null) {
 		                try {
-			                socket = new Socket(HOST, PORT);
+			                socket = new Socket(hostAddress, PORT);
 		                } catch (IOException ioe) {
 			                Log.e(TAG, "Cannot create socket");
 			                ioe.printStackTrace();
@@ -514,16 +514,18 @@ public class SampleService extends IntentService {
     }
 
     /** Connection information */
-    private static final String HOST = "192.168.1.3";
+    private String hostAddress;
     private static final int PORT = 1234;
     Socket socket = null;
     DataOutputStream out = null;
     DataInputStream in = null;
 
     /* Preference file name used to save the last received message ts */
-    private static final String PREF_FILE_NAME = "com.example.andrea.tabsactionbar.saved_ts";
+    public static final String PREF_FILE_NAME = "com.example.andrea.tabsactionbar.saved_ts";
     /* This is the key used for saving the last message ts in the PREF_FILE_NAME file */
     private static final String LAST_MESSAGE_TS_KEY = "savedTs";
+	/* This is the key used for saving the server IP address in the PREF_FILE_NAME file */
+	public static final String HOST_IP_ADDRESS_KEY = "hostIPAddress";
 
     @Override
     public void onCreate() {
@@ -544,8 +546,10 @@ public class SampleService extends IntentService {
         mMessenger = new Messenger(mServiceHandler);
 
         /* Retriving the last saved value for the last message ts */
-        SharedPreferences savedTs = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
-        lastMessageTs = savedTs.getLong(LAST_MESSAGE_TS_KEY, 0); //if no save is found, default is 0
+        SharedPreferences savedPref = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
+        lastMessageTs = savedPref.getLong(LAST_MESSAGE_TS_KEY, 0); //if no save is found, default is 0
+	    hostAddress = savedPref.getString(HOST_IP_ADDRESS_KEY, "192.168.1.3");
+	    Log.d(TAG, "Using server: " + hostAddress);
     }
 
     /**
@@ -751,7 +755,7 @@ public class SampleService extends IntentService {
 		}
 		if (socket == null) {
 			try {
-				socket = new Socket(HOST, PORT);
+				socket = new Socket(hostAddress, PORT);
 			} catch (IOException ioe) {
 				Log.e(TAG, "Cannot create socket");
 				ioe.printStackTrace();
@@ -816,16 +820,16 @@ public class SampleService extends IntentService {
 		socket = null;
 	}
 
-	private void registerActivityAndStartListening() {
+	private int registerActivityAndStartListening() {
 		Log.i(TAG, "registering to remote server and starting listening thread");
 		if (socket == null) {
 			try {
-				socket = new Socket(HOST, PORT);
+				socket = new Socket(hostAddress, PORT);
 			} catch (IOException ioe) {
 				Log.e(TAG, "Cannot create socket");
 				sendErrorMessage("Unable to connect to chat server");
 				ioe.printStackTrace();
-				return;
+				return -1;
 			}
 			try {
                 /* this should not be needed because of the listening thread */
@@ -834,7 +838,7 @@ public class SampleService extends IntentService {
 			} catch (IOException ioe) {
 				Log.e(TAG, "Cannot create OutputStream");
 				ioe.printStackTrace();
-				return;
+				return -1;
 			}
 
 			try {
@@ -860,6 +864,7 @@ public class SampleService extends IntentService {
 				e.printStackTrace();
 			}
 		}
+		return 0;
 	}
 
 	/**
